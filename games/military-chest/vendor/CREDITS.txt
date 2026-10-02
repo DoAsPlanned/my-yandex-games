@@ -1,0 +1,7 @@
+Dice model/animation library used in this project:
+
+dice-roller-3d
+Source: https://www.npmjs.com/package/dice-roller-3d
+Bundle used: https://unpkg.com/dice-roller-3d/dist/dice-roller.js
+
+The library was integrated as a local vendor file for the in-game dice animation panel.

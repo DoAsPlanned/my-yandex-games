@@ -1,0 +1,3192 @@
+﻿
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Боевые шахматы: Армейская смекалка</title>
+  <style>
+    :root {
+      --bg-top: #d8ccb3;
+      --bg-bottom: #6e7462;
+      --panel: rgba(18, 28, 22, 0.82);
+      --panel-soft: rgba(245, 236, 215, 0.1);
+      --line: rgba(255, 241, 209, 0.2);
+      --text: #f7f2e6;
+      --muted: #d2c6a8;
+      --accent: #e1b15b;
+      --danger: #d86a52;
+      --ally: #7fc08d;
+      --enemy: #d88d6d;
+      --cell-light: #c7b18a;
+      --cell-dark: #7a6b4d;
+      --cell-highlight: #35d6e7;
+      --cell-attack: #d86a52;
+      --cell-selected: #7fd6d2;
+      --shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      color: var(--text);
+      font-family: "Trebuchet MS", "Arial Narrow", sans-serif;
+      background:
+        radial-gradient(circle at top, rgba(255, 229, 163, 0.28), transparent 30%),
+        linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      inset: auto;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::before {
+      width: 36vw;
+      height: 36vw;
+      left: -8vw;
+      top: 10vh;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(27, 37, 30, 0.34), transparent 70%);
+      filter: blur(10px);
+    }
+
+    body::after {
+      width: 42vw;
+      height: 42vw;
+      right: -10vw;
+      bottom: -8vw;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(121, 64, 36, 0.22), transparent 72%);
+      filter: blur(10px);
+    }
+
+    .shell {
+      position: relative;
+      z-index: 1;
+      width: min(1840px, calc(100% - 12px));
+      min-height: calc(100dvh - 12px);
+      margin: 6px auto;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background:
+        linear-gradient(135deg, rgba(255, 249, 235, 0.08), rgba(0, 0, 0, 0.18)),
+        var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+      transform-origin: top center;
+      will-change: transform;
+    }
+
+    .hero {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 18px;
+    }
+
+    .title-wrap h1 {
+      margin: 0;
+      font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+      letter-spacing: 1px;
+      font-size: clamp(2.2rem, 5vw, 4.3rem);
+      text-transform: uppercase;
+      line-height: 0.95;
+    }
+
+    .subtitle {
+      margin: 8px 0 0;
+      max-width: 760px;
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.45;
+    }
+
+    .badge {
+      padding: 10px 16px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 241, 209, 0.24);
+      background: rgba(255, 241, 209, 0.08);
+      color: var(--accent);
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      white-space: nowrap;
+    }
+
+    .menu-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background:
+        radial-gradient(circle at top, rgba(255, 229, 163, 0.16), transparent 30%),
+        rgba(9, 14, 11, 0.7);
+      backdrop-filter: blur(8px);
+    }
+
+    .menu-overlay.hidden {
+      display: none;
+    }
+
+    .menu-card {
+      width: min(760px, 100%);
+      padding: 26px;
+      border-radius: 28px;
+      border: 1px solid rgba(255, 241, 209, 0.22);
+      background:
+        linear-gradient(145deg, rgba(255, 249, 235, 0.09), rgba(0, 0, 0, 0.3)),
+        rgba(18, 28, 22, 0.94);
+      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.42);
+      transform-origin: center center;
+      will-change: transform;
+    }
+
+    .menu-kicker {
+      display: inline-block;
+      margin-bottom: 10px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      color: var(--accent);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      border: 1px solid rgba(255, 241, 209, 0.16);
+      background: rgba(255, 241, 209, 0.08);
+    }
+
+    .menu-title {
+      margin: 0;
+      font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      font-size: clamp(2.4rem, 7vw, 4.8rem);
+      line-height: 0.95;
+    }
+
+    .menu-subtitle {
+      margin: 12px 0 0;
+      max-width: 640px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .menu-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .menu-panel {
+      padding: 18px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 241, 209, 0.1);
+    }
+
+    .menu-panel h3 {
+      margin: 0 0 10px;
+      font-size: 0.98rem;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .menu-panel p,
+    .menu-panel li {
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .menu-panel ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .mode-select {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .mode-card {
+      width: 100%;
+      text-align: center;
+      padding: 14px 16px;
+      border-radius: 18px;
+      border: 1px solid rgba(255, 241, 209, 0.14);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(11, 15, 12, 0.38));
+      color: var(--text);
+      cursor: pointer;
+      transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+    }
+
+    .mode-card:hover {
+      transform: translateY(-1px);
+    }
+
+    .mode-card.active {
+      border-color: rgba(225, 177, 91, 0.65);
+      box-shadow: 0 0 0 2px rgba(225, 177, 91, 0.18);
+      background: linear-gradient(180deg, rgba(241, 216, 157, 0.22), rgba(57, 38, 10, 0.42));
+    }
+
+    .mode-card strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 1rem;
+    }
+
+    .mode-card span {
+      display: block;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .menu-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      margin-top: 22px;
+      justify-items: stretch;
+    }
+
+    .menu-start {
+      width: 100%;
+      min-height: 68px;
+      padding: 20px 24px;
+      font-size: 1.26rem;
+      border-radius: 20px;
+      box-shadow:
+        0 16px 34px rgba(207, 159, 72, 0.24),
+        inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    }
+
+    .menu-continue {
+      width: 100%;
+      min-height: 60px;
+      font-size: 1.06rem;
+      border-radius: 18px;
+    }
+
+    .menu-secondary {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .menu-note {
+      min-height: 1.5em;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 0.94rem;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(285px, 0.78fr) minmax(860px, 1.82fr) minmax(250px, 0.7fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.15));
+      border-radius: 22px;
+      padding: 14px;
+    }
+
+    .panel h2,
+    .panel h3 {
+      margin: 0 0 10px;
+      font-size: 1.05rem;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+    }
+
+    .board-wrap {
+      padding: 10px;
+    }
+
+    .board-frame {
+      border-radius: 24px;
+      padding: 10px;
+      background:
+        linear-gradient(160deg, rgba(239, 223, 189, 0.24), rgba(15, 21, 17, 0.7)),
+        rgba(18, 18, 18, 0.55);
+      border: 1px solid rgba(255, 241, 209, 0.18);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+
+    .board-grid {
+      display: grid;
+      grid-template-columns: 32px repeat(10, minmax(48px, 1fr));
+      grid-template-rows: 32px repeat(10, minmax(48px, 1fr));
+      gap: 5px;
+      user-select: none;
+    }
+
+    .axis {
+      display: grid;
+      place-items: center;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    .corner {
+      opacity: 0;
+    }
+
+    .cell {
+      position: relative;
+      aspect-ratio: 1 / 1;
+      border: 0;
+      border-radius: 12px;
+      padding: 4px;
+      color: #1a1a1a;
+      cursor: pointer;
+      transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+      overflow: hidden;
+    }
+
+    .cell.light { background: var(--cell-light); }
+    .cell.dark { background: var(--cell-dark); }
+    .cell:hover { transform: translateY(-1px); }
+
+    .cell.selectable {
+      outline: 2px solid rgba(127, 214, 210, 0.9);
+      outline-offset: -2px;
+      box-shadow: 0 0 0 4px rgba(127, 214, 210, 0.14);
+    }
+
+    .cell.move-target::after,
+    .cell.attack-target::after,
+    .cell.selected::after {
+      content: "";
+      position: absolute;
+      inset: 6px;
+      border-radius: 10px;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .cell.move-target::after {
+      background: rgba(53, 214, 231, 0.34);
+      box-shadow:
+        inset 0 0 0 2px var(--cell-highlight),
+        0 0 16px rgba(53, 214, 231, 0.34);
+    }
+
+    .cell.attack-target::after {
+      background: rgba(216, 106, 82, 0.22);
+      box-shadow: inset 0 0 0 2px var(--cell-attack);
+    }
+
+    .cell.selected::after {
+      background: rgba(127, 214, 210, 0.18);
+      box-shadow: inset 0 0 0 2px var(--cell-selected);
+    }
+
+    .impact-effect {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 3;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .impact-effect::before,
+    .impact-effect::after {
+      content: "";
+      position: absolute;
+      inset: 12%;
+      border-radius: 50%;
+    }
+
+    .impact-effect.hit::before {
+      background: radial-gradient(circle, rgba(255, 238, 190, 0.95) 0%, rgba(255, 151, 92, 0.82) 40%, rgba(216, 106, 82, 0) 76%);
+      animation: impact-flash 560ms ease-out forwards;
+    }
+
+    .impact-effect.hit::after {
+      border: 2px solid rgba(255, 228, 170, 0.88);
+      animation: impact-ring 560ms ease-out forwards;
+    }
+
+    .impact-effect.kill::before {
+      background:
+        radial-gradient(circle, rgba(255, 246, 214, 0.98) 0%, rgba(255, 184, 92, 0.88) 30%, rgba(216, 106, 82, 0.88) 54%, rgba(216, 106, 82, 0) 82%);
+      animation: impact-flash 760ms ease-out forwards;
+    }
+
+    .impact-effect.kill::after {
+      border: 3px solid rgba(255, 238, 190, 0.92);
+      box-shadow: 0 0 18px rgba(255, 170, 92, 0.42);
+      animation: impact-ring-strong 760ms ease-out forwards;
+    }
+
+    @keyframes impact-flash {
+      0% {
+        transform: scale(0.35);
+        opacity: 0;
+      }
+      18% {
+        opacity: 1;
+      }
+      100% {
+        transform: scale(1.45);
+        opacity: 0;
+      }
+    }
+
+    @keyframes impact-ring {
+      0% {
+        transform: scale(0.4);
+        opacity: 0.9;
+      }
+      100% {
+        transform: scale(1.35);
+        opacity: 0;
+      }
+    }
+
+    @keyframes impact-ring-strong {
+      0% {
+        transform: scale(0.28);
+        opacity: 1;
+      }
+      100% {
+        transform: scale(1.6);
+        opacity: 0;
+      }
+    }
+
+    .piece {
+      position: relative;
+      height: 100%;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 5px;
+      text-align: center;
+      color: #f9f7f1;
+      font-weight: 700;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+      z-index: 1;
+    }
+
+    .piece.player {
+      background: linear-gradient(180deg, #36533a, #1d3120);
+      border: 1px solid rgba(147, 210, 152, 0.45);
+    }
+
+    .piece.enemy {
+      background: linear-gradient(180deg, #6b4737, #351f17);
+      border: 1px solid rgba(232, 160, 136, 0.4);
+    }
+
+    .piece .icon-wrap {
+      width: 100%;
+      height: 100%;
+      border-radius: 8px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .piece .icon-image {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35));
+    }
+
+    .piece.enemy .icon-image {
+      transform: scaleX(-1);
+    }
+
+    .piece .hp {
+      position: absolute;
+      right: 4px;
+      bottom: 2px;
+      font-size: 0.68rem;
+      padding: 1px 5px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.32);
+      color: #fff4d6;
+    }
+
+    .sidebar {
+      display: grid;
+      gap: 12px;
+      font-size: 0.94rem;
+    }
+
+    .rightbar {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 12px;
+      font-size: 0.94rem;
+      align-content: start;
+      height: 100%;
+    }
+
+    .log-panel {
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .stat-card {
+      padding: 11px 12px;
+      border-radius: 18px;
+      background: var(--panel-soft);
+      border: 1px solid rgba(255, 241, 209, 0.12);
+    }
+
+    .stat-card .label {
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .stat-card .value {
+      margin-top: 5px;
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    .turn-banner {
+      margin-bottom: 12px;
+      height: 92px;
+      padding: 12px 14px;
+      border-radius: 18px;
+      background: linear-gradient(90deg, rgba(225, 177, 91, 0.18), rgba(255, 255, 255, 0.05));
+      border: 1px solid rgba(225, 177, 91, 0.22);
+      overflow: hidden;
+    }
+
+    .turn-banner strong {
+      display: block;
+      font-size: 1rem;
+      margin-bottom: 4px;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+      justify-items: stretch;
+    }
+
+    .roll-action {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: 1fr;
+    }
+
+    button.control {
+      appearance: none;
+      border: 0;
+      border-radius: 15px;
+      min-height: 44px;
+      padding: 11px 12px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      color: #1f1a12;
+      text-align: center;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      line-height: 1.15;
+      background: linear-gradient(180deg, #f1d89d, #cf9f48);
+      transition: transform 120ms ease, filter 120ms ease, opacity 120ms ease;
+    }
+
+    #undoBtn,
+    #redoBtn,
+    #settingsBtn,
+    #resetBtn,
+    #helpBtn,
+    #menuBtn,
+    #menuSettingsBtn,
+    #menuHelpBtn,
+    #menuStartBtn {
+      min-height: 56px;
+    }
+
+    .roll-action .control {
+      min-height: 56px;
+      font-size: 1.08rem;
+      border-radius: 18px;
+      box-shadow:
+        0 12px 24px rgba(207, 159, 72, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+
+    .small-actions {
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      justify-items: stretch;
+    }
+
+    button.control:hover:enabled {
+      transform: translateY(-1px);
+      filter: brightness(1.03);
+    }
+
+    button.control:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    button.control.alt {
+      color: var(--text);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(11, 15, 12, 0.4));
+      border: 1px solid rgba(255, 241, 209, 0.16);
+    }
+    .piece-card {
+      height: 470px;
+      display: flex;
+      flex-direction: column;
+      border-radius: 18px;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 241, 209, 0.12);
+      line-height: 1.45;
+      overflow: hidden;
+    }
+
+    .piece-card .name {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .piece-head {
+      display: grid;
+      grid-template-columns: 76px 1fr;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .piece-preview {
+      width: 76px;
+      height: 76px;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 241, 209, 0.18);
+      background: rgba(255, 255, 255, 0.05);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .piece-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .piece-meta {
+      display: grid;
+      gap: 4px;
+    }
+
+    .piece-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: auto;
+      padding-top: 12px;
+    }
+
+    .piece-instruction {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 241, 209, 0.08);
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+
+    .piece-actions .wide {
+      grid-column: 1 / -1;
+    }
+
+    .control.active {
+      box-shadow: 0 0 0 2px rgba(127, 214, 210, 0.38);
+      background: linear-gradient(180deg, #fff0c2, #dbb25c);
+    }
+
+
+    .log,
+    .piece-card,
+    .help-card,
+    .settings-card {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(225, 177, 91, 0.82) rgba(255, 241, 209, 0.08);
+    }
+
+    .log::-webkit-scrollbar,
+    .piece-card::-webkit-scrollbar,
+    .help-card::-webkit-scrollbar,
+    .settings-card::-webkit-scrollbar {
+      width: 10px;
+    }
+
+    .log::-webkit-scrollbar-track,
+    .piece-card::-webkit-scrollbar-track,
+    .help-card::-webkit-scrollbar-track,
+    .settings-card::-webkit-scrollbar-track {
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(255, 241, 209, 0.08), rgba(11, 15, 12, 0.32));
+      border: 1px solid rgba(255, 241, 209, 0.06);
+    }
+
+    .log::-webkit-scrollbar-thumb,
+    .piece-card::-webkit-scrollbar-thumb,
+    .help-card::-webkit-scrollbar-thumb,
+    .settings-card::-webkit-scrollbar-thumb {
+      border-radius: 999px;
+      background: linear-gradient(180deg, #f0cf86, #c8923f);
+      border: 1px solid rgba(255, 241, 209, 0.24);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 249, 235, 0.5),
+        0 0 10px rgba(225, 177, 91, 0.18);
+    }
+
+    .log::-webkit-scrollbar-thumb:hover,
+    .piece-card::-webkit-scrollbar-thumb:hover,
+    .help-card::-webkit-scrollbar-thumb:hover,
+    .settings-card::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(180deg, #f5da98, #d19b49);
+    }
+
+    .log {
+      flex: 1;
+      min-height: 260px;
+      max-height: 400px;
+      overflow: auto;
+      padding-right: 6px;
+      font-size: 0.93rem;
+      line-height: 1.45;
+    }
+
+    .help-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 11;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(9, 14, 11, 0.74);
+      backdrop-filter: blur(8px);
+    }
+
+    .help-overlay.hidden {
+      display: none;
+    }
+
+    .help-card {
+      width: min(720px, 100%);
+      max-height: min(86dvh, 920px);
+      padding: 24px;
+      border-radius: 24px;
+      border: 1px solid rgba(255, 241, 209, 0.18);
+      background:
+        linear-gradient(145deg, rgba(255, 249, 235, 0.08), rgba(0, 0, 0, 0.24)),
+        rgba(18, 28, 22, 0.96);
+      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.42);
+      transform-origin: center center;
+      will-change: transform;
+      overflow: auto;
+    }
+
+    .help-card h2 {
+      margin: 0 0 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .help-card p,
+    .help-card li {
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .help-card ul {
+      margin: 0 0 14px;
+      padding-left: 18px;
+    }
+
+    .settings-card {
+      width: min(640px, 100%);
+      max-height: min(82dvh, 780px);
+      padding: 24px;
+      border-radius: 24px;
+      border: 1px solid rgba(255, 241, 209, 0.18);
+      background:
+        linear-gradient(145deg, rgba(255, 249, 235, 0.08), rgba(0, 0, 0, 0.24)),
+        rgba(18, 28, 22, 0.96);
+      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.42);
+      transform-origin: center center;
+      will-change: transform;
+      overflow: auto;
+    }
+
+    .settings-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .settings-head h2 {
+      margin: 0;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .settings-close {
+      min-width: 120px;
+    }
+
+    .settings-section {
+      padding: 16px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 241, 209, 0.1);
+    }
+
+    .settings-section h3 {
+      margin: 0 0 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      font-size: 1rem;
+    }
+
+    .settings-section p,
+    .settings-row span,
+    .settings-note {
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .settings-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 241, 209, 0.08);
+    }
+
+    .settings-toggle {
+      min-width: 132px;
+      min-height: 48px;
+    }
+
+    .settings-slider {
+      margin-top: 14px;
+      padding: 16px 16px 18px;
+      border-radius: 18px;
+      background:
+        linear-gradient(180deg, rgba(248, 226, 168, 0.08), rgba(11, 15, 12, 0.28)),
+        rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(225, 177, 91, 0.14);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.06),
+        0 8px 20px rgba(0, 0, 0, 0.16);
+    }
+
+    .settings-slider-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+      color: var(--muted);
+    }
+
+    .settings-slider-head strong {
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    .settings-slider input[type="range"] {
+      --audio-volume-percent: 60%;
+      width: 100%;
+      margin: 0;
+      appearance: none;
+      -webkit-appearance: none;
+      height: 12px;
+      border-radius: 999px;
+      background:
+        linear-gradient(
+          90deg,
+          rgba(225, 177, 91, 0.96) 0,
+          rgba(200, 137, 63, 0.96) var(--audio-volume-percent),
+          rgba(61, 72, 58, 0.95) var(--audio-volume-percent),
+          rgba(61, 72, 58, 0.95) 100%
+        );
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 241, 209, 0.18),
+        inset 0 2px 8px rgba(0, 0, 0, 0.32),
+        0 1px 0 rgba(255, 255, 255, 0.04);
+      outline: none;
+    }
+
+    .settings-slider input[type="range"]::-webkit-slider-runnable-track {
+      height: 12px;
+      border-radius: 999px;
+      background: transparent;
+    }
+
+    .settings-slider input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 26px;
+      height: 26px;
+      margin-top: -7px;
+      border: 1px solid rgba(255, 241, 209, 0.32);
+      border-radius: 8px;
+      background:
+        linear-gradient(180deg, #f3dba2, #b98538);
+      box-shadow:
+        0 10px 18px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 249, 235, 0.55),
+        inset 0 -2px 4px rgba(78, 45, 12, 0.28);
+      cursor: pointer;
+    }
+
+    .settings-slider input[type="range"]::-moz-range-track {
+      height: 12px;
+      border: 0;
+      border-radius: 999px;
+      background:
+        linear-gradient(
+          90deg,
+          rgba(225, 177, 91, 0.96) 0,
+          rgba(200, 137, 63, 0.96) var(--audio-volume-percent),
+          rgba(61, 72, 58, 0.95) var(--audio-volume-percent),
+          rgba(61, 72, 58, 0.95) 100%
+        );
+    }
+
+    .settings-slider input[type="range"]::-moz-range-thumb {
+      width: 26px;
+      height: 26px;
+      border: 1px solid rgba(255, 241, 209, 0.32);
+      border-radius: 8px;
+      background:
+        linear-gradient(180deg, #f3dba2, #b98538);
+      box-shadow:
+        0 10px 18px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 249, 235, 0.55),
+        inset 0 -2px 4px rgba(78, 45, 12, 0.28);
+      cursor: pointer;
+    }
+
+    .settings-note {
+      margin: 14px 0 0;
+      font-size: 0.92rem;
+    }
+
+    .music-choices {
+      margin-top: 14px;
+      padding: 14px 16px 16px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 241, 209, 0.1);
+    }
+
+    .music-choice-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .music-choice {
+      min-height: 52px;
+      font-size: 0.96rem;
+    }
+
+    .music-choice.active {
+      color: #1f1a12;
+      border-color: rgba(225, 177, 91, 0.65);
+      background: linear-gradient(180deg, #f1d89d, #cf9f48);
+      box-shadow: 0 0 0 2px rgba(225, 177, 91, 0.18);
+    }
+
+    .log p {
+      margin: 0 0 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255, 241, 209, 0.08);
+    }
+
+    .rules {
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+
+    .rules strong {
+      color: var(--text);
+    }
+
+    .dice-panel {
+      display: grid;
+      grid-template-columns: 126px 1fr;
+      gap: 14px;
+      align-items: center;
+      margin: 14px 0;
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 241, 209, 0.12);
+    }
+
+    .dice-stage {
+      display: grid;
+      place-items: center;
+      perspective: 900px;
+      min-height: 120px;
+    }
+
+    .dice-cube3d {
+      position: relative;
+      width: 74px;
+      height: 74px;
+      transform-style: preserve-3d;
+      transform: rotateX(-24deg) rotateY(28deg);
+      transition: transform 600ms cubic-bezier(.2,.7,.2,1);
+    }
+
+    .dice-cube3d.rolling {
+      animation: dice-spin3d 860ms linear infinite;
+    }
+
+    .dice-core {
+      position: absolute;
+      inset: 8px;
+      border-radius: 14px;
+      background: linear-gradient(180deg, #ebe4d2, #b7af9f);
+      transform: translateZ(0);
+      box-shadow:
+        inset 0 2px 4px rgba(255, 255, 255, 0.35),
+        inset 0 -6px 10px rgba(0, 0, 0, 0.16);
+    }
+
+    .dice-face {
+      position: absolute;
+      inset: 0;
+      border-radius: 16px;
+      background: linear-gradient(180deg, #fffdf6, #d6d0bf);
+      border: 1px solid rgba(0, 0, 0, 0.16);
+      box-shadow:
+        inset 0 2px 0 rgba(255, 255, 255, 0.9),
+        inset 0 -6px 14px rgba(0, 0, 0, 0.12);
+      padding: 10px;
+      backface-visibility: hidden;
+    }
+
+    .face-1 { transform: rotateY(0deg) translateZ(37px); }
+    .face-2 { transform: rotateY(90deg) translateZ(37px); }
+    .face-3 { transform: rotateX(90deg) translateZ(37px); }
+    .face-4 { transform: rotateX(-90deg) translateZ(37px); }
+    .face-5 { transform: rotateY(-90deg) translateZ(37px); }
+    .face-6 { transform: rotateY(180deg) translateZ(37px); }
+
+    .face-grid {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      place-items: center;
+    }
+
+    .pip {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #2e332c;
+      opacity: 0;
+    }
+
+    .pip.show {
+      opacity: 1;
+    }
+
+    .dice-info {
+      display: grid;
+      gap: 6px;
+    }
+
+    .dice-title {
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .dice-status {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+      min-height: 1.35em;
+    }
+
+    .dice-value {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--accent);
+      min-height: 1.4em;
+    }
+
+    @keyframes dice-spin3d {
+      0% { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(0.92); }
+      100% { transform: rotateX(360deg) rotateY(720deg) rotateZ(360deg) scale(1.02); }
+    }
+
+    @media (max-width: 1080px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .shell {
+        width: min(100% - 16px, 1320px);
+        padding: 14px;
+        border-radius: 20px;
+      }
+
+      .hero {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .board-grid {
+        grid-template-columns: 20px repeat(10, minmax(24px, 1fr));
+        grid-template-rows: 20px repeat(10, minmax(24px, 1fr));
+        gap: 3px;
+      }
+
+      .status-grid,
+      .actions,
+      .legend {
+        grid-template-columns: 1fr;
+      }
+
+      .dice-panel {
+        grid-template-columns: 1fr;
+      }
+
+      .menu-card {
+        padding: 18px;
+        border-radius: 22px;
+      }
+
+      .menu-grid,
+      .mode-select,
+      .menu-actions,
+      .menu-secondary {
+        grid-template-columns: 1fr;
+      }
+
+      .menu-start {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="menu-overlay" id="mainMenu">
+    <div class="menu-card" id="mainMenuCard">
+      <div class="menu-kicker">Главное меню</div>
+      <h1 class="menu-title">Боевые шахматы</h1>
+      <p class="menu-subtitle">
+        Армейская смекалка на поле 10x10: бросайте кубик, выбирайте манёвр или огонь и добирайтесь до штаба противника раньше него.
+      </p>
+
+      <div class="menu-grid">
+        <div class="menu-panel">
+          <h3>Режим игры</h3>
+          <div class="mode-select">
+            <button class="mode-card active" id="menuModeAi" data-mode="ai" type="button">
+              <strong>С компьютером</strong>
+              <span>Сражение против ИИ на одном устройстве.</span>
+            </button>
+            <button class="mode-card" id="menuModeFriend" data-mode="friend" type="button">
+              <strong>С другом</strong>
+              <span>Пошаговая игра вдвоём за одним экраном.</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="menu-actions">
+        <button class="control menu-start" id="menuStartBtn" type="button">Новая игра</button>
+        <button class="control alt menu-continue" id="menuContinueBtn" type="button" disabled>Продолжить</button>
+        <div class="menu-secondary">
+          <button class="control alt" id="menuHelpBtn" type="button">Инструкция</button>
+          <button class="control alt" id="menuSettingsBtn" type="button">Настройки</button>
+        </div>
+      </div>
+      <div class="menu-note" id="menuNote"></div>
+    </div>
+  </div>
+
+  <div class="help-overlay hidden" id="helpOverlay">
+    <div class="help-card" id="helpCard">
+      <h2>Инструкция</h2>
+      <p>Это пошаговая военная версия шахмат на поле 10x10. Главная цель партии — уничтожить штаб противника раньше, чем он уничтожит ваш.</p>
+
+      <p><strong>Как проходит ход:</strong></p>
+      <ul>
+        <li>В начале хода бросьте кубик.</li>
+        <li>После броска выберите одну свою фигуру.</li>
+        <li>Для выбранной фигуры доступно ровно одно действие: манёвр или огонь.</li>
+        <li>После хода или выстрела очередь сразу переходит следующему игроку.</li>
+      </ul>
+
+      <p><strong>Манёвр и огонь:</strong></p>
+      <ul>
+        <li>Длина хода и дальность выстрела всегда равны выпавшему значению кубика.</li>
+        <li>Если для фигуры нет допустимого манёвра или цели для огня, это будет показано в карточке выбранной фигуры.</li>
+        <li>Доступные клетки для хода подсвечиваются лазурным цветом, а цели для огня — красным.</li>
+      </ul>
+
+      <p><strong>Особенности фигур:</strong></p>
+      <ul>
+        <li>Солдат и офицер движутся только вперёд относительно своей стороны, но стрелять могут во все стороны.</li>
+        <li>Танк движется во всех направлениях, но не проходит сквозь фигуры.</li>
+        <li>Самолёт и ракета перелетают через другие фигуры.</li>
+        <li>Пушка, вышка, самолёт и ракета стреляют сквозь преграды.</li>
+        <li>Ракета наносит мощный удар, но после выстрела расходуется.</li>
+      </ul>
+
+      <p><strong>Прочность и уничтожение:</strong></p>
+      <ul>
+        <li>У каждой фигуры есть запас прочности, который показан числом на фишке.</li>
+        <li>При попадании цель теряет прочность. Если прочность падает до нуля, фигура уничтожается.</li>
+        <li>Если у стороны остался только штаб, он получает возможность атаковать с уроном 3.</li>
+      </ul>
+
+      <p><strong>Победа и режимы:</strong></p>
+      <ul>
+        <li>Победа наступает после уничтожения штаба противника.</li>
+        <li>В режиме <strong>с компьютером</strong> вы играете против ИИ.</li>
+        <li>В режиме <strong>с другом</strong> два игрока ходят по очереди на одном устройстве.</li>
+      </ul>
+
+      <p><strong>Управление:</strong></p>
+      <ul>
+        <li><strong>Назад</strong> отменяет последний шаг, <strong>Вперёд</strong> возвращает отменённый шаг.</li>
+        <li><strong>Новая партия</strong> начинает бой заново в текущем режиме.</li>
+        <li><strong>В меню</strong> возвращает на стартовый экран игры.</li>
+      </ul>
+      <div class="menu-actions">
+        <button class="control" id="helpCloseBtn" type="button">Понятно</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="help-overlay hidden" id="settingsOverlay">
+    <div class="settings-card" id="settingsCard">
+      <div class="settings-head">
+        <div>
+          <div class="menu-kicker">Настройки</div>
+          <h2>Звук и музыка</h2>
+        </div>
+        <button class="control alt settings-close" id="settingsCloseBtn" type="button">Закрыть</button>
+      </div>
+
+      <div class="settings-section">
+        <h3>Аудио</h3>
+        <p>Настройте общий уровень громкости и отдельно включайте музыку и игровые эффекты.</p>
+
+        <div class="settings-row">
+          <span>Фоновая музыка</span>
+          <button class="control alt settings-toggle" id="musicToggleBtn" type="button">Включена</button>
+        </div>
+
+        <div class="settings-row">
+          <span>Звуковые эффекты</span>
+          <button class="control alt settings-toggle" id="sfxToggleBtn" type="button">Включены</button>
+        </div>
+
+        <div class="settings-slider">
+          <div class="settings-slider-head">
+            <span>Громкость</span>
+            <strong id="audioVolumeValue">60%</strong>
+          </div>
+          <input type="range" id="audioVolumeSlider" min="0" max="100" step="1" value="60" aria-label="Громкость звука">
+        </div>
+
+        <div class="music-choices">
+          <div class="settings-slider-head">
+            <span>Музыкальная тема</span>
+            <strong id="musicChoiceLabel">Военный марш</strong>
+          </div>
+          <div class="music-choice-grid">
+            <button class="control alt music-choice" id="musicChoiceMilitary" type="button">Военный марш</button>
+            <button class="control alt music-choice" id="musicChoiceBattle" type="button">Бой</button>
+            <button class="control alt music-choice" id="musicChoiceRegular" type="button">Сражение</button>
+          </div>
+        </div>
+
+        <p class="settings-note" id="settingsAudioNote">
+          Музыка играет фоном, а эффекты сопровождают бросок кубика, выбор фигуры, перемещение, выстрел и уничтожение.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="shell" id="gameShell">
+    <div class="hero">
+      <div class="title-wrap">
+        <h1>Боевые шахматы</h1>
+        <p class="subtitle">
+          Армейская смекалка на поле 10x10: бросайте кубик, выбирайте между манёвром и огнём, пробивайтесь к штабу противника и
+          выигрывайте военную дуэль по мотивам приложенных правил.
+        </p>
+      </div>
+      <div class="badge">HTML5 игра для Яндекс Игр</div>
+    </div>
+
+    <div class="layout">
+      <section class="panel sidebar">
+        <div>
+          <h2>Командный пункт</h2>
+          <div class="status-grid">
+            <div class="stat-card">
+              <div class="label">Режим</div>
+              <div class="value" id="modeValue">С компьютером</div>
+            </div>
+            <div class="stat-card">
+              <div class="label">Ход</div>
+              <div class="value" id="turnValue">Игрок</div>
+            </div>
+            <div class="stat-card">
+              <div class="label" id="playerForceLabel">Ваши силы</div>
+              <div class="value" id="playerForce">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="label" id="enemyForceLabel">Силы врага</div>
+              <div class="value" id="enemyForce">0</div>
+            </div>
+          </div>
+
+          <div class="turn-banner" id="turnBanner">
+            <strong>Подготовка к бою</strong>
+            Нажмите «Бросить кубик», чтобы начать ваш ход.
+          </div>
+
+          <div class="dice-panel">
+            <div class="dice-stage">
+              <div class="dice-cube3d" id="diceCube">
+                <div class="dice-core"></div>
+                <div class="dice-face face-1"><div class="face-grid"><span class="pip" data-face="1" data-pip="1"></span><span class="pip" data-face="1" data-pip="2"></span><span class="pip" data-face="1" data-pip="3"></span><span class="pip" data-face="1" data-pip="4"></span><span class="pip show" data-face="1" data-pip="5"></span><span class="pip" data-face="1" data-pip="6"></span><span class="pip" data-face="1" data-pip="7"></span><span class="pip" data-face="1" data-pip="8"></span><span class="pip" data-face="1" data-pip="9"></span></div></div>
+                <div class="dice-face face-2"><div class="face-grid"><span class="pip show" data-face="2" data-pip="1"></span><span class="pip" data-face="2" data-pip="2"></span><span class="pip" data-face="2" data-pip="3"></span><span class="pip" data-face="2" data-pip="4"></span><span class="pip" data-face="2" data-pip="5"></span><span class="pip" data-face="2" data-pip="6"></span><span class="pip" data-face="2" data-pip="7"></span><span class="pip" data-face="2" data-pip="8"></span><span class="pip show" data-face="2" data-pip="9"></span></div></div>
+                <div class="dice-face face-3"><div class="face-grid"><span class="pip show" data-face="3" data-pip="1"></span><span class="pip" data-face="3" data-pip="2"></span><span class="pip" data-face="3" data-pip="3"></span><span class="pip" data-face="3" data-pip="4"></span><span class="pip show" data-face="3" data-pip="5"></span><span class="pip" data-face="3" data-pip="6"></span><span class="pip" data-face="3" data-pip="7"></span><span class="pip" data-face="3" data-pip="8"></span><span class="pip show" data-face="3" data-pip="9"></span></div></div>
+                <div class="dice-face face-4"><div class="face-grid"><span class="pip show" data-face="4" data-pip="1"></span><span class="pip" data-face="4" data-pip="2"></span><span class="pip show" data-face="4" data-pip="3"></span><span class="pip" data-face="4" data-pip="4"></span><span class="pip" data-face="4" data-pip="5"></span><span class="pip" data-face="4" data-pip="6"></span><span class="pip show" data-face="4" data-pip="7"></span><span class="pip" data-face="4" data-pip="8"></span><span class="pip show" data-face="4" data-pip="9"></span></div></div>
+                <div class="dice-face face-5"><div class="face-grid"><span class="pip show" data-face="5" data-pip="1"></span><span class="pip" data-face="5" data-pip="2"></span><span class="pip show" data-face="5" data-pip="3"></span><span class="pip" data-face="5" data-pip="4"></span><span class="pip show" data-face="5" data-pip="5"></span><span class="pip" data-face="5" data-pip="6"></span><span class="pip show" data-face="5" data-pip="7"></span><span class="pip" data-face="5" data-pip="8"></span><span class="pip show" data-face="5" data-pip="9"></span></div></div>
+                <div class="dice-face face-6"><div class="face-grid"><span class="pip show" data-face="6" data-pip="1"></span><span class="pip" data-face="6" data-pip="2"></span><span class="pip show" data-face="6" data-pip="3"></span><span class="pip show" data-face="6" data-pip="4"></span><span class="pip" data-face="6" data-pip="5"></span><span class="pip show" data-face="6" data-pip="6"></span><span class="pip show" data-face="6" data-pip="7"></span><span class="pip" data-face="6" data-pip="8"></span><span class="pip show" data-face="6" data-pip="9"></span></div></div>
+              </div>
+            </div>
+            <div class="dice-info">
+              <div class="dice-title">Бросок кубика</div>
+              <div class="dice-status" id="diceOverlayLabel">Кубик готов к броску</div>
+              <div class="dice-value" id="diceOverlayValue">Ожидание</div>
+            </div>
+          </div>
+
+          <div class="roll-action">
+            <button class="control" id="rollBtn">Бросить кубик</button>
+          </div>
+
+          <div class="actions">
+            <button class="control alt" id="undoBtn">Назад</button>
+            <button class="control alt" id="redoBtn">Вперёд</button>
+            <button class="control alt" id="helpBtn">Инструкция</button>
+            <button class="control alt" id="settingsBtn">Настройки</button>
+            <button class="control alt" id="resetBtn">Новая партия</button>
+            <button class="control alt" id="menuBtn">В меню</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel board-wrap">
+        <div class="board-frame">
+          <div class="board-grid" id="board"></div>
+        </div>
+      </section>
+
+      <section class="panel rightbar">
+        <div>
+          <h3>Выбранная фигура</h3>
+          <div class="piece-card" id="pieceCard">
+            Выберите свою фигуру после броска кубика. Для каждого хода доступно только одно действие: перемещение или выстрел.
+          </div>
+        </div>
+
+        <div class="log-panel">
+          <h3>Журнал боя</h3>
+          <div class="log" id="log"></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script src="https://yandex.ru/games/sdk/v2"></script>
+  <script>
+    const BOARD_SIZE = 10;
+    const LETTERS = ["А", "Б", "В", "Г", "Д", "Е", "Ж", "З", "И", "К"];
+    const MUSIC_ENABLED_KEY = "military-chest-music-enabled";
+    const MUSIC_TRACK_KEY = "military-chest-music-track";
+    const SFX_ENABLED_KEY = "military-chest-sfx-enabled";
+    const AUDIO_VOLUME_KEY = "military-chest-audio-volume";
+    const CLICK_SFX_SRC = "";
+    const DICE_ROLL_SFX_SRC = "";
+    const MOVE_SFX_SRC = "";
+    const SHOT_SFX_SRC = "";
+    const EXPLOSION_SFX_SRC = "";
+    const BASE_MUSIC_VOLUME = 0.24;
+    const MUSIC_TRACKS = {
+      military: {
+        id: "military",
+        title: "Военный марш",
+        src: "assets/audio/battle-theme.mp3"
+      },
+      battle: {
+        id: "battle",
+        title: "Бой",
+        src: "assets/audio/battle-theme-alt-2.mp3"
+      },
+      regular: {
+        id: "regular",
+        title: "Сражение",
+        src: "assets/audio/battle-theme-alt-3.mp3"
+      }
+    };
+    const typeConfig = {
+      soldier: {
+        key: "soldier",
+        name: "Солдат",
+        nameAccusative: "солдата",
+        nameDative: "солдату",
+        nameInstrumental: "солдатом",
+        destroyMessage: "Солдат уничтожен.",
+        icon: "assets/icons/soldier-v2.svg",
+        hp: 1,
+        damage: 1,
+        mobile: true,
+        movement: "soldier",
+        shotsThrough: false,
+        movesThrough: false
+      },
+      officer: {
+        key: "officer",
+        name: "Офицер",
+        nameAccusative: "офицера",
+        nameDative: "офицеру",
+        nameInstrumental: "офицером",
+        destroyMessage: "Офицер уничтожен.",
+        icon: "assets/icons/officer-v2.svg",
+        hp: 2,
+        damage: 2,
+        mobile: true,
+        movement: "officer",
+        shotsThrough: false,
+        movesThrough: false
+      },
+      artillery: {
+        key: "artillery",
+        name: "Орудие",
+        nameAccusative: "орудие",
+        nameDative: "орудию",
+        nameInstrumental: "орудием",
+        destroyMessage: "Орудие уничтожено.",
+        icon: "assets/icons/artillery-v2.svg",
+        hp: 3,
+        damage: 3,
+        mobile: false,
+        movement: "stationary",
+        shotsThrough: true,
+        movesThrough: false
+      },
+      tank: {
+        key: "tank",
+        name: "Танк",
+        nameAccusative: "танк",
+        nameDative: "танку",
+        nameInstrumental: "танком",
+        destroyMessage: "Танк уничтожен.",
+        icon: "assets/icons/tank-v2.svg",
+        hp: 3,
+        damage: 3,
+        mobile: true,
+        movement: "tank",
+        shotsThrough: false,
+        movesThrough: false
+      },
+      plane: {
+        key: "plane",
+        name: "Самолет",
+        nameAccusative: "самолет",
+        nameDative: "самолету",
+        nameInstrumental: "самолетом",
+        destroyMessage: "Самолет уничтожен.",
+        icon: "assets/icons/plane-v2.svg",
+        hp: 5,
+        damage: 5,
+        mobile: true,
+        movement: "all",
+        shotsThrough: true,
+        movesThrough: true
+      },
+      rocket: {
+        key: "rocket",
+        name: "Ракета",
+        nameAccusative: "ракету",
+        nameDative: "ракете",
+        nameInstrumental: "ракетой",
+        destroyMessage: "Ракета уничтожена.",
+        icon: "assets/icons/rocket-v2.svg",
+        hp: 5,
+        damage: 5,
+        mobile: true,
+        movement: "all",
+        shotsThrough: true,
+        movesThrough: true,
+        singleShot: true
+      },
+      tower: {
+        key: "tower",
+        name: "Вышка",
+        nameAccusative: "вышку",
+        nameDative: "вышке",
+        nameInstrumental: "вышкой",
+        destroyMessage: "Вышка уничтожена.",
+        icon: "assets/icons/tower-v2.svg",
+        hp: 5,
+        damage: 5,
+        mobile: false,
+        movement: "stationary",
+        shotsThrough: true,
+        movesThrough: false
+      },
+      hq: {
+        key: "hq",
+        name: "Штаб",
+        nameAccusative: "штаб",
+        nameDative: "штабу",
+        nameInstrumental: "штабом",
+        destroyMessage: "Штаб уничтожен.",
+        icon: "assets/icons/hq-v2.svg",
+        hp: 10,
+        damage: 0,
+        mobile: false,
+        movement: "stationary",
+        shotsThrough: true,
+        movesThrough: false
+      }
+    };
+
+    const pieceDescriptions = {
+      soldier: "Базовая пехота для продвижения и захвата пространства. Ходит только вперёд, влево или вправо на значение кубика. Стреляет на ту же дальность в любом направлении.",
+      officer: "Усиленная мобильная фигура для гибких атак и поддержки. Ходит вперёд, в стороны и по диагонали вперёд на значение кубика. Стреляет на ту же дальность в любом направлении.",
+      artillery: "Дальнобойная огневая точка. Почти не маневрирует и не ходит, зато стреляет на значение кубика во все стороны и бьёт сквозь преграды.",
+      tank: "Штурмовая фигура для давления на центр и прорыва. Ходит на значение кубика во всех направлениях без прохода сквозь фигуры. Стреляет на ту же дальность по прямым и диагоналям.",
+      plane: "Быстрая ударная единица для обхода и внезапных атак. Ходит во всех направлениях и перелетает через фигуры. Стреляет на значение кубика во все стороны сквозь препятствия.",
+      rocket: "Одноразовый мощный удар по важной цели. Ходит во всех направлениях и перелетает через фигуры. Стреляет на значение кубика сквозь преграды, после выстрела исчезает.",
+      tower: "Неподвижная оборонительная точка с сильным огнём. Не ходит, но стреляет на значение кубика во все стороны и простреливает сквозь преграды.",
+      hq: "Главная цель всей партии. Обычно не ходит и не атакует. Если остаётся один, начинает стрелять на значение кубика с уроном 3."
+    };
+
+    const presets = [
+      "rocket", "tank", "plane", "artillery", "tower", "hq", "artillery", "plane", "tank", "rocket",
+      "soldier", "soldier", "soldier", "soldier", "officer", "officer", "soldier", "soldier", "soldier", "soldier"
+    ];
+
+    const state = {
+      board: [],
+      currentTurn: "player",
+      gameMode: "ai",
+      dice: null,
+      rolled: false,
+      actionTaken: false,
+      actionMode: "move",
+      selectedId: null,
+      legalMoves: [],
+      legalShots: [],
+      isRollingAnimation: false,
+      gameOver: false,
+      log: [],
+      moveCount: 0,
+      history: [],
+      future: [],
+      activeEffects: [],
+      ysdk: null,
+      menuOpen: true,
+      menuNote: "",
+      helpOpen: false,
+      settingsOpen: false,
+      enemyTurnTimer: null,
+      hasStartedGame: false,
+      musicEnabled: true,
+      currentMusicId: "military",
+      sfxEnabled: true,
+      audioVolume: 0.6,
+      audioContext: null,
+      musicTrack: null,
+      soundBank: null,
+      diceLoopAudio: null
+    };
+
+    const shellEl = document.getElementById("gameShell");
+    const mainMenuEl = document.getElementById("mainMenu");
+    const mainMenuCardEl = document.getElementById("mainMenuCard");
+    const helpOverlayEl = document.getElementById("helpOverlay");
+    const helpCardEl = document.getElementById("helpCard");
+    const settingsOverlayEl = document.getElementById("settingsOverlay");
+    const settingsCardEl = document.getElementById("settingsCard");
+    const menuModeAiBtn = document.getElementById("menuModeAi");
+    const menuModeFriendBtn = document.getElementById("menuModeFriend");
+    const menuStartBtn = document.getElementById("menuStartBtn");
+    const menuContinueBtn = document.getElementById("menuContinueBtn");
+    const menuHelpBtn = document.getElementById("menuHelpBtn");
+    const menuSettingsBtn = document.getElementById("menuSettingsBtn");
+    const menuNoteEl = document.getElementById("menuNote");
+    const helpCloseBtn = document.getElementById("helpCloseBtn");
+    const boardEl = document.getElementById("board");
+    const modeValueEl = document.getElementById("modeValue");
+    const turnValueEl = document.getElementById("turnValue");
+    const playerForceLabelEl = document.getElementById("playerForceLabel");
+    const enemyForceLabelEl = document.getElementById("enemyForceLabel");
+    const playerForceEl = document.getElementById("playerForce");
+    const enemyForceEl = document.getElementById("enemyForce");
+    const pieceCardEl = document.getElementById("pieceCard");
+    const logEl = document.getElementById("log");
+    const turnBannerEl = document.getElementById("turnBanner");
+    const diceOverlayLabelEl = document.getElementById("diceOverlayLabel");
+    const diceOverlayValueEl = document.getElementById("diceOverlayValue");
+    const diceCubeEl = document.getElementById("diceCube");
+    const rollBtn = document.getElementById("rollBtn");
+    const undoBtn = document.getElementById("undoBtn");
+    const redoBtn = document.getElementById("redoBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const helpBtn = document.getElementById("helpBtn");
+    const settingsBtn = document.getElementById("settingsBtn");
+    const menuBtn = document.getElementById("menuBtn");
+    const settingsCloseBtn = document.getElementById("settingsCloseBtn");
+    const musicToggleBtn = document.getElementById("musicToggleBtn");
+    const musicChoiceLabelEl = document.getElementById("musicChoiceLabel");
+    const musicChoiceMilitaryBtn = document.getElementById("musicChoiceMilitary");
+    const musicChoiceBattleBtn = document.getElementById("musicChoiceBattle");
+    const musicChoiceRegularBtn = document.getElementById("musicChoiceRegular");
+    const sfxToggleBtn = document.getElementById("sfxToggleBtn");
+    const audioVolumeSlider = document.getElementById("audioVolumeSlider");
+    const audioVolumeValueEl = document.getElementById("audioVolumeValue");
+    const settingsAudioNoteEl = document.getElementById("settingsAudioNote");
+
+    function initYandexSdk() {
+      if (!window.YaGames) {
+        return;
+      }
+
+      window.YaGames.init().then((ysdk) => {
+        state.ysdk = ysdk;
+        ysdk.features.LoadingAPI?.ready();
+      }).catch(() => {
+      });
+    }
+
+    function createInitialBoard() {
+      let idCounter = 1;
+      const board = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(null));
+      const playerRows = [9, 8];
+      const enemyRows = [0, 1];
+
+      for (let col = 0; col < BOARD_SIZE; col += 1) {
+        const playerBackType = presets[col];
+        const enemyBackType = presets[col];
+        const playerFrontType = presets[col + BOARD_SIZE];
+        const enemyFrontType = presets[col + BOARD_SIZE];
+
+        board[playerRows[0]][col] = createPiece(playerBackType, "player", playerRows[0], col, idCounter++);
+        board[playerRows[1]][col] = createPiece(playerFrontType, "player", playerRows[1], col, idCounter++);
+        board[enemyRows[0]][col] = createPiece(enemyBackType, "enemy", enemyRows[0], col, idCounter++);
+        board[enemyRows[1]][col] = createPiece(enemyFrontType, "enemy", enemyRows[1], col, idCounter++);
+      }
+
+      return board;
+    }
+
+    function createPiece(type, owner, row, col, id) {
+      const config = typeConfig[type];
+      return {
+        id,
+        type,
+        owner,
+        row,
+        col,
+        hp: config.hp,
+        maxHp: config.hp
+      };
+    }
+
+    function createHistorySnapshot() {
+      return {
+        board: structuredClone(state.board),
+        currentTurn: state.currentTurn,
+        gameMode: state.gameMode,
+        dice: state.dice,
+        rolled: state.rolled,
+        actionTaken: state.actionTaken,
+        actionMode: state.actionMode,
+        selectedId: state.selectedId,
+        legalMoves: structuredClone(state.legalMoves),
+        legalShots: structuredClone(state.legalShots),
+        isRollingAnimation: false,
+        gameOver: state.gameOver,
+        log: [...state.log],
+        moveCount: state.moveCount
+      };
+    }
+
+    function pushHistory() {
+      state.history.push(createHistorySnapshot());
+      if (state.history.length > 60) {
+        state.history.shift();
+      }
+      state.future = [];
+    }
+
+    function restoreSnapshot(snapshot) {
+      state.board = snapshot.board;
+      state.currentTurn = snapshot.currentTurn;
+      state.gameMode = snapshot.gameMode;
+      state.dice = snapshot.dice;
+      state.rolled = snapshot.rolled;
+      state.actionTaken = snapshot.actionTaken;
+      state.actionMode = snapshot.actionMode;
+      state.selectedId = snapshot.selectedId;
+      state.legalMoves = snapshot.legalMoves;
+      state.legalShots = snapshot.legalShots;
+      state.activeEffects = [];
+      state.isRollingAnimation = snapshot.isRollingAnimation;
+      state.gameOver = snapshot.gameOver;
+      state.log = snapshot.log;
+      state.moveCount = snapshot.moveCount;
+    }
+
+    function syncMenuControls() {
+      if (!menuModeAiBtn || !menuModeFriendBtn || !menuNoteEl || !mainMenuEl) {
+        return;
+      }
+      menuModeAiBtn.classList.toggle("active", state.gameMode === "ai");
+      menuModeFriendBtn.classList.toggle("active", state.gameMode === "friend");
+      if (menuContinueBtn) {
+        menuContinueBtn.disabled = !state.hasStartedGame;
+      }
+      menuNoteEl.textContent = state.menuNote;
+      mainMenuEl.classList.toggle("hidden", !state.menuOpen);
+      helpOverlayEl?.classList.toggle("hidden", !state.helpOpen);
+      settingsOverlayEl?.classList.toggle("hidden", !state.settingsOpen);
+    }
+
+    function fitElementToViewport(element, padding = 16) {
+      if (!element) {
+        return;
+      }
+
+      element.style.transform = "scale(1)";
+      const width = element.offsetWidth;
+      const height = element.offsetHeight;
+      if (!width || !height) {
+        return;
+      }
+
+      const scale = Math.min(
+        1,
+        (window.innerWidth - padding * 2) / width,
+        (window.innerHeight - padding * 2) / height
+      );
+
+      element.style.transform = `scale(${Math.max(scale, 0.42)})`;
+    }
+
+    function updateViewportScale() {
+      fitElementToViewport(shellEl, 10);
+
+      if (state.menuOpen) {
+        fitElementToViewport(mainMenuCardEl, 18);
+      } else if (mainMenuCardEl) {
+        mainMenuCardEl.style.transform = "scale(1)";
+      }
+
+      if (state.helpOpen) {
+        fitElementToViewport(helpCardEl, 18);
+      } else if (helpCardEl) {
+        helpCardEl.style.transform = "scale(1)";
+      }
+
+      if (state.settingsOpen) {
+        fitElementToViewport(settingsCardEl, 18);
+      } else if (settingsCardEl) {
+        settingsCardEl.style.transform = "scale(1)";
+      }
+    }
+
+    function cancelEnemyTurnTimer() {
+      if (state.enemyTurnTimer) {
+        window.clearTimeout(state.enemyTurnTimer);
+        state.enemyTurnTimer = null;
+      }
+    }
+
+    function undoLastStep() {
+      if (state.isRollingAnimation) {
+        return;
+      }
+      const snapshot = state.history.pop();
+      if (!snapshot) {
+        return;
+      }
+
+      if (state.ysdk) {
+        state.ysdk.features.GameplayAPI?.stop?.();
+      }
+
+      state.future.push(createHistorySnapshot());
+      restoreSnapshot(snapshot);
+      addLog("Выполнен откат на один шаг назад.");
+      updateUI();
+    }
+
+    function redoLastStep() {
+      if (state.isRollingAnimation) {
+        return;
+      }
+      const snapshot = state.future.pop();
+      if (!snapshot) {
+        return;
+      }
+
+      if (state.ysdk) {
+        state.ysdk.features.GameplayAPI?.stop?.();
+      }
+
+      state.history.push(createHistorySnapshot());
+      restoreSnapshot(snapshot);
+      addLog("Возврат вперёд выполнен.");
+      updateUI();
+    }
+
+    function resetGame(keepHistory = false) {
+      if (!keepHistory) {
+        state.history = [];
+        state.future = [];
+      }
+      state.board = createInitialBoard();
+      state.currentTurn = "player";
+      state.dice = null;
+      state.rolled = false;
+      state.actionTaken = false;
+      state.actionMode = "move";
+      state.selectedId = null;
+      state.legalMoves = [];
+      state.legalShots = [];
+      state.activeEffects = [];
+      state.isRollingAnimation = false;
+      state.gameOver = false;
+      state.log = [];
+      state.moveCount = 0;
+      addLog(`Поле развёрнуто. Режим: ${state.gameMode === "ai" ? "с компьютером" : "с другом"}. Операция начинается.`);
+      updateUI();
+    }
+
+    function addLog(message) {
+      state.log.unshift(message);
+      state.log = state.log.slice(0, 16);
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function loadAudioSettings() {
+      try {
+        state.musicEnabled = localStorage.getItem(MUSIC_ENABLED_KEY) !== "0";
+        const savedTrack = localStorage.getItem(MUSIC_TRACK_KEY) || "military";
+        state.currentMusicId = MUSIC_TRACKS[savedTrack] ? savedTrack : "military";
+        state.sfxEnabled = localStorage.getItem(SFX_ENABLED_KEY) !== "0";
+        state.audioVolume = clamp(Number(localStorage.getItem(AUDIO_VOLUME_KEY) || 0.6), 0, 1);
+      } catch (error) {
+        state.musicEnabled = true;
+        state.currentMusicId = "military";
+        state.sfxEnabled = true;
+        state.audioVolume = 0.6;
+      }
+      updateAudioUi();
+    }
+
+    function ensureAudioContext() {
+      if (state.audioContext) {
+        return state.audioContext;
+      }
+
+      const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextCtor) {
+        return null;
+      }
+
+      state.audioContext = new AudioContextCtor();
+      return state.audioContext;
+    }
+
+    function ensureSoundBank() {
+      if (state.soundBank) {
+        return state.soundBank;
+      }
+
+      const createOptionalAudio = (src) => {
+        const audio = new Audio();
+        if (src) {
+          audio.src = src;
+          audio.preload = "auto";
+        }
+        return audio;
+      };
+
+      const click = createOptionalAudio(CLICK_SFX_SRC);
+      const dice = createOptionalAudio(DICE_ROLL_SFX_SRC);
+      const move = createOptionalAudio(MOVE_SFX_SRC);
+      const shot = createOptionalAudio(SHOT_SFX_SRC);
+      const explosion = createOptionalAudio(EXPLOSION_SFX_SRC);
+      state.soundBank = { click, dice, move, shot, explosion };
+      return state.soundBank;
+    }
+
+    function ensureMusicTrack() {
+      const selectedTrack = MUSIC_TRACKS[state.currentMusicId] || MUSIC_TRACKS.military;
+      if (state.musicTrack && state.musicTrack.dataset.trackId === selectedTrack.id) {
+        return state.musicTrack;
+      }
+
+      if (state.musicTrack) {
+        state.musicTrack.pause();
+        state.musicTrack = null;
+      }
+
+      const track = new Audio(selectedTrack.src);
+      track.loop = true;
+      track.preload = "auto";
+      track.dataset.trackId = selectedTrack.id;
+      state.musicTrack = track;
+      applyMusicVolume();
+      return track;
+    }
+
+    function effectiveMusicVolume() {
+      return clamp(BASE_MUSIC_VOLUME * (state.audioVolume / 0.6), 0, 1);
+    }
+
+    function applyMusicVolume() {
+      const track = ensureMusicTrack();
+      track.volume = state.musicEnabled ? effectiveMusicVolume() : 0;
+    }
+
+    function updateAudioUi() {
+      const percent = Math.round(state.audioVolume * 100);
+      if (audioVolumeSlider) {
+        audioVolumeSlider.value = String(percent);
+        audioVolumeSlider.style.setProperty("--audio-volume-percent", `${percent}%`);
+      }
+      if (audioVolumeValueEl) {
+        audioVolumeValueEl.textContent = `${percent}%`;
+      }
+      if (musicToggleBtn) {
+        musicToggleBtn.textContent = state.musicEnabled ? "Включена" : "Выключена";
+        musicToggleBtn.classList.toggle("active", state.musicEnabled);
+      }
+      if (musicChoiceLabelEl) {
+        musicChoiceLabelEl.textContent = (MUSIC_TRACKS[state.currentMusicId] || MUSIC_TRACKS.military).title;
+      }
+      musicChoiceMilitaryBtn?.classList.toggle("active", state.currentMusicId === "military");
+      musicChoiceBattleBtn?.classList.toggle("active", state.currentMusicId === "battle");
+      musicChoiceRegularBtn?.classList.toggle("active", state.currentMusicId === "regular");
+      if (sfxToggleBtn) {
+        sfxToggleBtn.textContent = state.sfxEnabled ? "Включены" : "Выключены";
+        sfxToggleBtn.classList.toggle("active", state.sfxEnabled);
+      }
+      if (settingsAudioNoteEl) {
+        settingsAudioNoteEl.textContent = state.musicEnabled
+          ? "Выберите подходящую тему для партии."
+          : "Музыка отключена.";
+      }
+    }
+
+    function resumeMusic() {
+      if (!state.musicEnabled) {
+        return;
+      }
+
+      const track = ensureMusicTrack();
+      const audioContext = ensureAudioContext();
+      if (audioContext && audioContext.state === "suspended") {
+        audioContext.resume().catch(() => {});
+      }
+      applyMusicVolume();
+      if (track.paused) {
+        track.play().catch(() => {});
+      }
+    }
+
+    function suspendMusic() {
+      if (state.musicTrack && !state.musicTrack.paused) {
+        state.musicTrack.pause();
+      }
+    }
+
+    function stopDiceLoopSound() {
+      if (!state.diceLoopAudio) {
+        return;
+      }
+      state.diceLoopAudio.pause();
+      state.diceLoopAudio.currentTime = 0;
+      state.diceLoopAudio = null;
+    }
+
+    function unlockAudio() {
+      ensureSoundBank();
+      if (state.musicEnabled) {
+        resumeMusic();
+      } else {
+        const audioContext = ensureAudioContext();
+        if (audioContext && audioContext.state === "suspended") {
+          audioContext.resume().catch(() => {});
+        }
+      }
+    }
+
+    function setAudioVolume(value) {
+      state.audioVolume = clamp(value, 0, 1);
+      localStorage.setItem(AUDIO_VOLUME_KEY, String(state.audioVolume));
+      applyMusicVolume();
+      updateAudioUi();
+    }
+
+    function toggleMusicEnabled() {
+      state.musicEnabled = !state.musicEnabled;
+      localStorage.setItem(MUSIC_ENABLED_KEY, state.musicEnabled ? "1" : "0");
+      applyMusicVolume();
+      if (state.musicEnabled) {
+        resumeMusic();
+      } else {
+        suspendMusic();
+      }
+      updateAudioUi();
+    }
+
+    function setMusicTrack(trackId) {
+      if (!MUSIC_TRACKS[trackId] || state.currentMusicId === trackId) {
+        updateAudioUi();
+        return;
+      }
+
+      state.currentMusicId = trackId;
+      localStorage.setItem(MUSIC_TRACK_KEY, trackId);
+      const wasPlaying = state.musicEnabled;
+      if (state.musicTrack) {
+        state.musicTrack.pause();
+        state.musicTrack = null;
+      }
+      updateAudioUi();
+      if (wasPlaying) {
+        resumeMusic();
+      }
+    }
+
+    function toggleSfxEnabled() {
+      state.sfxEnabled = !state.sfxEnabled;
+      localStorage.setItem(SFX_ENABLED_KEY, state.sfxEnabled ? "1" : "0");
+      updateAudioUi();
+    }
+
+    function playUiTone(frequency, duration, options = {}) {
+      return;
+    }
+
+    function playSfxAsset(kind, volume = 1, playbackRate = 1) {
+      if (!state.sfxEnabled) {
+        return;
+      }
+      const bank = ensureSoundBank();
+      const source = bank[kind];
+      if (!source || !source.src) {
+        return;
+      }
+      const sample = source.cloneNode();
+      sample.volume = clamp(volume * state.audioVolume, 0, 1);
+      sample.playbackRate = playbackRate;
+      sample.play().catch(() => {});
+    }
+
+    function playLoopedSfx(kind, volume = 1, playbackRate = 1) {
+      if (!state.sfxEnabled) {
+        return null;
+      }
+      const bank = ensureSoundBank();
+      const source = bank[kind];
+      if (!source || !source.src) {
+        return null;
+      }
+      const sample = source.cloneNode();
+      sample.loop = true;
+      sample.volume = clamp(volume * state.audioVolume, 0, 1);
+      sample.playbackRate = playbackRate;
+      sample.play().catch(() => {});
+      return sample;
+    }
+
+    function playSelectSound() {
+      return;
+    }
+
+    function playMoveSound() {
+      return;
+    }
+
+    function playRollSound() {
+      stopDiceLoopSound();
+      return;
+    }
+
+    function playShotSound(isDestroyed = false) {
+      return;
+    }
+
+    function handleVisibilityAudio() {
+      if (document.hidden) {
+        suspendMusic();
+        return;
+      }
+      if (state.musicEnabled) {
+        resumeMusic();
+      }
+    }
+
+    function pluralize(value, one, few, many) {
+      const abs = Math.abs(value) % 100;
+      const last = abs % 10;
+      if (abs > 10 && abs < 20) {
+        return many;
+      }
+      if (last === 1) {
+        return one;
+      }
+      if (last >= 2 && last <= 4) {
+        return few;
+      }
+      return many;
+    }
+
+    function formatDamage(value) {
+      return `${value} ${pluralize(value, "единицу урона", "единицы урона", "единиц урона")}`;
+    }
+
+    function formatDurability(value) {
+      return `${value} ${pluralize(value, "очко прочности", "очка прочности", "очков прочности")}`;
+    }
+
+    function formatCells(value) {
+      return `${value} ${pluralize(value, "клетку", "клетки", "клеток")}`;
+    }
+
+    function formatActionPoints(value) {
+      return `${value} ${pluralize(value, "очко хода", "очка хода", "очков хода")}`;
+    }
+
+    function getPieceLabel(type, form = "nominative") {
+      const config = typeConfig[type];
+      if (!config) {
+        return "";
+      }
+      if (form === "accusative") {
+        return config.nameAccusative || config.name.toLowerCase();
+      }
+      if (form === "dative") {
+        return config.nameDative || config.name.toLowerCase();
+      }
+      if (form === "instrumental") {
+        return config.nameInstrumental || config.name.toLowerCase();
+      }
+      return config.name.toLowerCase();
+    }
+
+    function getTravelDistance(fromRow, fromCol, toRow, toCol) {
+      return Math.max(Math.abs(toRow - fromRow), Math.abs(toCol - fromCol));
+    }
+
+    function triggerImpactEffect(row, col, kind = "hit") {
+      const effect = {
+        id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        row,
+        col,
+        kind
+      };
+      state.activeEffects.push(effect);
+      updateUI();
+
+      window.setTimeout(() => {
+        state.activeEffects = state.activeEffects.filter((item) => item.id !== effect.id);
+        updateUI();
+      }, kind === "kill" ? 760 : 560);
+    }
+
+    function getTurnLabel(owner = state.currentTurn) {
+      if (state.gameMode === "friend") {
+        return owner === "player" ? "Игрок 1" : "Игрок 2";
+      }
+      return owner === "player" ? "Игрок" : "Компьютер";
+    }
+
+    function isHumanTurn(owner = state.currentTurn) {
+      return state.gameMode === "friend" || owner === "player";
+    }
+
+    function renderBoard() {
+      boardEl.innerHTML = "";
+      boardEl.appendChild(makeAxisCell("", "corner"));
+
+      for (let col = 0; col < BOARD_SIZE; col += 1) {
+        boardEl.appendChild(makeAxisCell(String(col + 1)));
+      }
+
+      for (let row = 0; row < BOARD_SIZE; row += 1) {
+        boardEl.appendChild(makeAxisCell(LETTERS[row]));
+
+        for (let col = 0; col < BOARD_SIZE; col += 1) {
+          const cell = document.createElement("button");
+          cell.className = `cell ${(row + col) % 2 === 0 ? "light" : "dark"}`;
+          cell.dataset.row = String(row);
+          cell.dataset.col = String(col);
+
+          const piece = state.board[row][col];
+          const isSelected = piece && piece.id === state.selectedId;
+          const isMoveTarget = state.actionMode === "move" && state.legalMoves.some((move) => move.row === row && move.col === col);
+          const isAttackTarget = state.actionMode === "shoot" && state.legalShots.some((shot) => shot.row === row && shot.col === col);
+          const isSelectable = piece && piece.owner === state.currentTurn && isHumanTurn() && state.rolled && !state.actionTaken;
+
+          if (isSelected) {
+            cell.classList.add("selected");
+          }
+          if (isMoveTarget) {
+            cell.classList.add("move-target");
+          }
+          if (isAttackTarget) {
+            cell.classList.add("attack-target");
+          }
+          if (isSelectable) {
+            cell.classList.add("selectable");
+          }
+
+          cell.addEventListener("click", () => handleCellClick(row, col));
+
+          if (piece) {
+            const pieceEl = document.createElement("div");
+            pieceEl.className = `piece ${piece.owner}`;
+            pieceEl.innerHTML = `
+              <div class="icon-wrap">
+                <img class="icon-image" src="${typeConfig[piece.type].icon}" alt="${typeConfig[piece.type].name}">
+              </div>
+              <div class="hp">${piece.hp}</div>
+            `;
+            cell.appendChild(pieceEl);
+          }
+
+          const effect = state.activeEffects.find((item) => item.row === row && item.col === col);
+          if (effect) {
+            const effectEl = document.createElement("div");
+            effectEl.className = `impact-effect ${effect.kind}`;
+            cell.appendChild(effectEl);
+          }
+
+          boardEl.appendChild(cell);
+        }
+      }
+    }
+
+    function makeAxisCell(text, extraClass = "") {
+      const el = document.createElement("div");
+      el.className = `axis ${extraClass}`.trim();
+      el.textContent = text;
+      return el;
+    }
+
+    function updateUI() {
+      renderBoard();
+      syncMenuControls();
+      updateAudioUi();
+      modeValueEl.textContent = state.gameMode === "ai" ? "С компьютером" : "С другом";
+      turnValueEl.textContent = getTurnLabel();
+      playerForceLabelEl.textContent = state.gameMode === "ai" ? "Ваши силы" : "Игрок 1";
+      enemyForceLabelEl.textContent = state.gameMode === "ai" ? "Силы врага" : "Игрок 2";
+      playerForceEl.textContent = calculateForce("player");
+      enemyForceEl.textContent = calculateForce("enemy");
+      rollBtn.disabled = state.rolled || !isHumanTurn() || state.gameOver || state.isRollingAnimation;
+      undoBtn.disabled = state.history.length === 0 || state.isRollingAnimation;
+      redoBtn.disabled = state.future.length === 0 || state.isRollingAnimation;
+      resetBtn.disabled = state.isRollingAnimation;
+      helpBtn.disabled = state.isRollingAnimation;
+      settingsBtn.disabled = state.isRollingAnimation;
+      menuBtn.disabled = state.isRollingAnimation;
+      updateDiceDisplay();
+      renderPieceCard();
+      renderLog();
+      updateBanner();
+      updateViewportScale();
+    }
+
+    function updateDiceDisplay() {
+      if (state.isRollingAnimation) {
+        return;
+      }
+
+      if (state.dice == null) {
+        diceCubeEl.style.transform = "rotateX(-24deg) rotateY(28deg)";
+        diceOverlayLabelEl.textContent = "Кубик готов к броску";
+        diceOverlayValueEl.textContent = "Ожидание";
+        return;
+      }
+
+      setDiceOrientation(state.dice);
+      diceOverlayLabelEl.textContent = "Кубик остановился";
+      diceOverlayValueEl.textContent = `Выпало: ${state.dice}`;
+    }
+
+    function setDiceOrientation(value) {
+      const rotations = {
+        1: "rotateX(0deg) rotateY(0deg)",
+        2: "rotateX(0deg) rotateY(-90deg)",
+        3: "rotateX(-90deg) rotateY(0deg)",
+        4: "rotateX(90deg) rotateY(0deg)",
+        5: "rotateX(0deg) rotateY(90deg)",
+        6: "rotateX(0deg) rotateY(180deg)"
+      };
+      diceCubeEl.style.transform = rotations[value] || rotations[1];
+    }
+
+    function wait(ms) {
+      return new Promise((resolve) => window.setTimeout(resolve, ms));
+    }
+
+    async function playDiceAnimation(finalValue) {
+      state.isRollingAnimation = true;
+      diceOverlayLabelEl.textContent = `${getTurnLabel()} бросает кубик...`;
+      diceOverlayValueEl.textContent = "Кубик катится...";
+      diceCubeEl.classList.add("rolling");
+      playRollSound();
+      updateUI();
+
+      for (let i = 0; i < 9; i += 1) {
+        setDiceOrientation(1 + Math.floor(Math.random() * 6));
+        await wait(95 + i * 10);
+      }
+
+      diceCubeEl.classList.remove("rolling");
+      setDiceOrientation(finalValue);
+      stopDiceLoopSound();
+      playSfxAsset("dice", 0.52, 0.92);
+      diceOverlayLabelEl.textContent = "Кубик остановился";
+      diceOverlayValueEl.textContent = `Выпало: ${finalValue}`;
+      await wait(850);
+      state.isRollingAnimation = false;
+      updateUI();
+    }
+
+    function renderPieceCard() {
+      const piece = findPieceById(state.selectedId);
+      if (!piece) {
+        pieceCardEl.textContent = "Выберите свою фигуру после броска кубика. Для каждого хода доступно только одно действие: перемещение или выстрел.";
+        return;
+      }
+
+      const config = typeConfig[piece.type];
+      const loneHq = piece.type === "hq" && isLoneHq(piece.owner);
+      const damage = loneHq ? 3 : config.damage;
+      const moveCount = getLegalMoves(piece).length;
+      const shotCount = getLegalShots(piece).length;
+      const description = piece.type === "hq" && loneHq
+        ? "Последний штаб в строю. Теперь он может отвечать огнём с уроном 3, пока не будет уничтожен."
+        : pieceDescriptions[piece.type];
+      pieceCardEl.innerHTML = `
+        <div class="piece-head">
+          <div class="piece-preview">
+            <img src="${config.icon}" alt="${config.name}">
+          </div>
+          <div class="piece-meta">
+            <div class="name">${config.name}</div>
+            <div>Координаты: <strong>${formatCoord(piece.row, piece.col)}</strong></div>
+            <div>Прочность: <strong>${piece.hp}/${piece.maxHp}</strong></div>
+            <div>Урон: <strong>${damage}</strong></div>
+          </div>
+        </div>
+        <div>Доступно клеток для хода: <strong>${moveCount}</strong></div>
+        <div>Доступно целей для огня: <strong>${shotCount}</strong></div>
+        <div class="piece-instruction">${description}</div>
+        <div class="piece-actions">
+          <button class="control alt ${state.actionMode === "move" ? "active" : ""}" id="pieceMoveBtn" ${moveCount === 0 || state.actionTaken ? "disabled" : ""}>Манёвр (${moveCount})</button>
+          <button class="control alt ${state.actionMode === "shoot" ? "active" : ""}" id="pieceShootBtn" ${shotCount === 0 || state.actionTaken ? "disabled" : ""}>Огонь (${shotCount})</button>
+          <button class="control alt wide" id="clearSelectionBtn" ${state.actionTaken ? "disabled" : ""}>Снять выбор</button>
+        </div>
+      `;
+
+      const pieceMoveBtn = document.getElementById("pieceMoveBtn");
+      const pieceShootBtn = document.getElementById("pieceShootBtn");
+      const clearSelectionBtn = document.getElementById("clearSelectionBtn");
+
+      pieceMoveBtn?.addEventListener("click", () => setActionMode("move"));
+      pieceShootBtn?.addEventListener("click", () => setActionMode("shoot"));
+      clearSelectionBtn?.addEventListener("click", clearSelection);
+    }
+
+    function renderLog() {
+      logEl.innerHTML = state.log.map((line) => `<p>${line}</p>`).join("");
+    }
+
+    function updateBanner() {
+      if (state.gameOver) {
+        return;
+      }
+
+      if (isHumanTurn()) {
+        if (!state.rolled) {
+          turnBannerEl.innerHTML = `<strong>${getTurnLabel()} ходит</strong>Бросьте кубик и выберите одну фигуру для манёвра или атаки.`;
+        } else if (!state.actionTaken) {
+          const selectedPiece = findPieceById(state.selectedId);
+          const prompt = selectedPiece
+            ? `Выбрана фигура ${typeConfig[selectedPiece.type].name}. Отдайте приказ: ${state.actionMode === "move" ? "манёвр" : "огонь"}.`
+            : "Выберите фигуру и отдайте один приказ на значение кубика.";
+          turnBannerEl.innerHTML = `<strong>Кубик: ${state.dice}</strong>${prompt}`;
+        } else {
+          turnBannerEl.innerHTML = `<strong>Приказ выполнен</strong>${state.gameMode === "ai" ? "Ход передаётся компьютеру." : "Ход передаётся другому игроку."}`;
+        }
+      } else {
+        turnBannerEl.innerHTML = "<strong>Ход противника</strong>Компьютер оценивает позицию и готовит ответ.";
+      }
+    }
+
+    function calculateForce(owner) {
+      let total = 0;
+      forEachPiece((piece) => {
+        if (piece.owner === owner) {
+          total += piece.hp;
+        }
+      });
+      return total;
+    }
+
+    function forEachPiece(callback) {
+      for (let row = 0; row < BOARD_SIZE; row += 1) {
+        for (let col = 0; col < BOARD_SIZE; col += 1) {
+          const piece = state.board[row][col];
+          if (piece) {
+            callback(piece);
+          }
+        }
+      }
+    }
+
+    function findPieceById(id) {
+      if (id == null) {
+        return null;
+      }
+      let found = null;
+      forEachPiece((piece) => {
+        if (piece.id === id) {
+          found = piece;
+        }
+      });
+      return found;
+    }
+
+    function handleCellClick(row, col) {
+      if (state.gameOver || !isHumanTurn()) {
+        return;
+      }
+
+      const piece = state.board[row][col];
+
+      if (piece && piece.owner === state.currentTurn) {
+        unlockAudio();
+        playSelectSound();
+        selectPiece(piece.id);
+        updateUI();
+        return;
+      }
+
+      if (!state.rolled || state.actionTaken) {
+        return;
+      }
+
+      if (state.actionMode === "move") {
+        const move = state.legalMoves.find((item) => item.row === row && item.col === col);
+        if (move) {
+          pushHistory();
+          executeMove(findPieceById(state.selectedId), move.row, move.col, true);
+        }
+      } else {
+        const shot = state.legalShots.find((item) => item.row === row && item.col === col);
+        if (shot) {
+          pushHistory();
+          executeShot(findPieceById(state.selectedId), shot.row, shot.col, true);
+        }
+      }
+    }
+
+    function refreshLegalActions() {
+      const piece = findPieceById(state.selectedId);
+      state.legalMoves = piece ? getLegalMoves(piece) : [];
+      state.legalShots = piece ? getLegalShots(piece) : [];
+    }
+
+    function selectPiece(pieceId, preferredMode = null) {
+      state.selectedId = pieceId;
+      refreshLegalActions();
+
+      const hasMoves = state.legalMoves.length > 0;
+      const hasShots = state.legalShots.length > 0;
+
+      if (preferredMode === "move" && hasMoves) {
+        state.actionMode = "move";
+        return;
+      }
+      if (preferredMode === "shoot" && hasShots) {
+        state.actionMode = "shoot";
+        return;
+      }
+
+      if (state.actionMode === "move" && !hasMoves && hasShots) {
+        state.actionMode = "shoot";
+      } else if (state.actionMode === "shoot" && !hasShots && hasMoves) {
+        state.actionMode = "move";
+      } else if (!hasMoves && hasShots) {
+        state.actionMode = "shoot";
+      } else {
+        state.actionMode = "move";
+      }
+    }
+
+    function clearSelection() {
+      if (state.actionTaken) {
+        return;
+      }
+
+      playSelectSound();
+      state.selectedId = null;
+      state.legalMoves = [];
+      state.legalShots = [];
+      updateUI();
+    }
+
+    function setActionMode(mode) {
+      if (!state.rolled || !isHumanTurn() || state.actionTaken || state.gameOver) {
+        return;
+      }
+
+      const piece = findPieceById(state.selectedId);
+      if (!piece) {
+        return;
+      }
+
+      playSelectSound();
+      selectPiece(piece.id, mode);
+      updateUI();
+    }
+
+    async function rollDice() {
+      if (state.gameOver || !isHumanTurn() || state.rolled || state.isRollingAnimation) {
+        return;
+      }
+
+      pushHistory();
+      unlockAudio();
+      const rolledValue = 1 + Math.floor(Math.random() * 6);
+      await playDiceAnimation(rolledValue);
+      state.dice = rolledValue;
+      state.rolled = true;
+      state.actionTaken = false;
+      state.selectedId = null;
+      state.legalMoves = [];
+      state.legalShots = [];
+      addLog(`${getTurnLabel()} бросает кубик: выпало ${formatActionPoints(state.dice)}.`);
+      updateUI();
+    }
+
+    function getLegalMoves(piece) {
+      if (!piece || !state.rolled || state.dice == null) {
+        return [];
+      }
+
+      const config = typeConfig[piece.type];
+      if (!config.mobile) {
+        return [];
+      }
+
+      const vectors = getMoveVectors(piece);
+      const results = [];
+
+      for (const [dr, dc] of vectors) {
+        const targetRow = piece.row + dr * state.dice;
+        const targetCol = piece.col + dc * state.dice;
+        if (!isInside(targetRow, targetCol)) {
+          continue;
+        }
+        if (state.board[targetRow][targetCol]) {
+          continue;
+        }
+        if (!config.movesThrough && !isPathClear(piece.row, piece.col, targetRow, targetCol)) {
+          continue;
+        }
+        results.push({ row: targetRow, col: targetCol });
+      }
+
+      return results;
+    }
+
+    function getLegalShots(piece) {
+      if (!piece || !state.rolled || state.dice == null) {
+        return [];
+      }
+
+      const damage = getPieceDamage(piece);
+      if (damage <= 0) {
+        return [];
+      }
+
+      const config = typeConfig[piece.type];
+      const results = [];
+
+      for (const [dr, dc] of getAllDirections()) {
+        const targetRow = piece.row + dr * state.dice;
+        const targetCol = piece.col + dc * state.dice;
+
+        if (!isInside(targetRow, targetCol)) {
+          continue;
+        }
+
+        const target = state.board[targetRow][targetCol];
+        if (!target || target.owner === piece.owner) {
+          continue;
+        }
+
+        if (!config.shotsThrough && !isPathClear(piece.row, piece.col, targetRow, targetCol)) {
+          continue;
+        }
+
+        results.push({ row: targetRow, col: targetCol });
+      }
+
+      return results;
+    }
+
+    function getMoveVectors(piece) {
+      const direction = piece.owner === "player" ? -1 : 1;
+      switch (typeConfig[piece.type].movement) {
+        case "soldier":
+          return [[direction, 0], [0, -1], [0, 1]];
+        case "officer":
+          return [[direction, 0], [0, -1], [0, 1], [direction, -1], [direction, 1]];
+        case "tank":
+        case "all":
+          return getAllDirections();
+        default:
+          return [];
+      }
+    }
+
+    function getAllDirections() {
+      return [
+        [-1, 0], [1, 0], [0, -1], [0, 1],
+        [-1, -1], [-1, 1], [1, -1], [1, 1]
+      ];
+    }
+
+    function isPathClear(fromRow, fromCol, toRow, toCol) {
+      const rowStep = Math.sign(toRow - fromRow);
+      const colStep = Math.sign(toCol - fromCol);
+      let row = fromRow + rowStep;
+      let col = fromCol + colStep;
+
+      while (row !== toRow || col !== toCol) {
+        if (state.board[row][col]) {
+          return false;
+        }
+        row += rowStep;
+        col += colStep;
+      }
+
+      return true;
+    }
+
+    function isInside(row, col) {
+      return row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE;
+    }
+
+    function executeMove(piece, row, col, isPlayerAction) {
+      if (!piece) {
+        return;
+      }
+
+      playMoveSound();
+      const distance = getTravelDistance(piece.row, piece.col, row, col);
+      state.board[piece.row][piece.col] = null;
+      const from = formatCoord(piece.row, piece.col);
+      piece.row = row;
+      piece.col = col;
+      state.board[row][col] = piece;
+      state.actionTaken = true;
+      state.legalMoves = [];
+      state.legalShots = [];
+      state.selectedId = piece.id;
+      addLog(`${getTurnLabel(piece.owner)} перемещает ${getPieceLabel(piece.type, "accusative")} ${from} -> ${formatCoord(row, col)} на ${formatCells(distance)}.`);
+      if (isPlayerAction) {
+        finishTurnAfterAction();
+      }
+    }
+
+    function executeShot(piece, row, col, isPlayerAction) {
+      if (!piece) {
+        return;
+      }
+
+      const target = state.board[row][col];
+      if (!target) {
+        return;
+      }
+
+      const damage = getPieceDamage(piece);
+      const sourceName = getPieceLabel(piece.type, "instrumental");
+      const targetName = getPieceLabel(target.type, "dative");
+      target.hp -= damage;
+      const isDestroyed = target.hp <= 0;
+      playShotSound(isDestroyed);
+      state.actionTaken = true;
+      state.legalMoves = [];
+      state.legalShots = [];
+      state.selectedId = piece.id;
+
+      let logLine = `${getTurnLabel(piece.owner)} стреляет ${sourceName} по ${targetName} на ${formatCoord(row, col)} с дистанции ${formatCells(state.dice)} и наносит ${formatDamage(damage)}.`;
+
+      if (isDestroyed) {
+        state.board[row][col] = null;
+        logLine += ` ${typeConfig[target.type].destroyMessage}`;
+      } else {
+        logLine += ` Осталось ${formatDurability(target.hp)}.`;
+      }
+
+      if (typeConfig[piece.type].singleShot) {
+        state.board[piece.row][piece.col] = null;
+        logLine += " Ракета израсходована.";
+      }
+
+      addLog(logLine);
+      triggerImpactEffect(row, col, isDestroyed ? "kill" : "hit");
+      checkVictory();
+
+      if (isPlayerAction) {
+        if (!state.gameOver) {
+          finishTurnAfterAction();
+        } else {
+          updateUI();
+        }
+      }
+    }
+
+    function getPieceDamage(piece) {
+      if (piece.type === "hq") {
+        return isLoneHq(piece.owner) ? 3 : 0;
+      }
+      return typeConfig[piece.type].damage;
+    }
+
+    function isLoneHq(owner) {
+      let count = 0;
+      let onlyHq = true;
+      forEachPiece((piece) => {
+        if (piece.owner === owner) {
+          count += 1;
+          if (piece.type !== "hq") {
+            onlyHq = false;
+          }
+        }
+      });
+      return count === 1 && onlyHq;
+    }
+
+    function checkVictory() {
+      let playerHq = null;
+      let enemyHq = null;
+
+      forEachPiece((piece) => {
+        if (piece.type === "hq") {
+          if (piece.owner === "player") {
+            playerHq = piece;
+          } else {
+            enemyHq = piece;
+          }
+        }
+      });
+
+      if (!playerHq || !enemyHq) {
+        state.gameOver = true;
+        const playerWon = Boolean(enemyHq === null && playerHq);
+        turnBannerEl.innerHTML = playerWon
+          ? "<strong>Победа</strong>Штаб противника уничтожен. Операция завершена успешно."
+          : "<strong>Поражение</strong>Ваш штаб уничтожен. Попробуйте другой план наступления.";
+        addLog(playerWon ? `${getTurnLabel("player")} уничтожил вражеский штаб и победил.` : `${getTurnLabel("enemy")} уничтожил штаб противника и победил.`);
+        if (state.ysdk) {
+          state.ysdk.features.GameplayAPI?.stop?.();
+        }
+      }
+    }
+
+    function endCurrentTurn() {
+      const nextTurn = state.currentTurn === "player" ? "enemy" : "player";
+      state.currentTurn = nextTurn;
+      state.dice = null;
+      state.rolled = false;
+      state.actionTaken = false;
+      state.actionMode = "move";
+      state.selectedId = null;
+      state.legalMoves = [];
+      state.legalShots = [];
+      state.moveCount += 1;
+
+      if (state.gameMode === "ai" && state.ysdk) {
+        state.ysdk.features.GameplayAPI?.start?.();
+      }
+
+      if (state.gameMode === "ai") {
+        updateUI();
+        cancelEnemyTurnTimer();
+        state.enemyTurnTimer = window.setTimeout(runEnemyTurn, 700);
+      } else {
+        addLog(`Ход переходит: ${getTurnLabel(nextTurn)}.`);
+        updateUI();
+      }
+    }
+
+    function finishTurnAfterAction() {
+      updateUI();
+      endCurrentTurn();
+    }
+
+    function runEnemyTurn() {
+      state.enemyTurnTimer = null;
+      if (state.gameOver) {
+        return;
+      }
+
+      state.dice = 1 + Math.floor(Math.random() * 6);
+      state.rolled = true;
+      addLog(`Компьютер бросает кубик: выпало ${formatActionPoints(state.dice)}.`);
+
+      const action = chooseEnemyAction();
+      if (action) {
+        pushHistory();
+        state.selectedId = action.piece.id;
+        if (action.kind === "shoot") {
+          executeShot(action.piece, action.row, action.col, false);
+        } else {
+          executeMove(action.piece, action.row, action.col, false);
+        }
+      } else {
+        addLog("Компьютер не нашёл допустимого хода и пропускает действие.");
+      }
+
+      if (!state.gameOver) {
+        state.currentTurn = "player";
+        state.dice = null;
+        state.rolled = false;
+        state.actionTaken = false;
+        state.actionMode = "move";
+        state.selectedId = null;
+        state.legalMoves = [];
+        state.legalShots = [];
+      }
+
+      if (state.ysdk) {
+        state.ysdk.features.GameplayAPI?.stop?.();
+      }
+
+      updateUI();
+    }
+
+    function chooseEnemyAction() {
+      const actions = [];
+      const playerHq = findHq("player");
+
+      forEachPiece((piece) => {
+        if (piece.owner !== "enemy") {
+          return;
+        }
+
+        for (const shot of getLegalShots(piece)) {
+          const target = state.board[shot.row][shot.col];
+          const damage = getPieceDamage(piece);
+          let score = 80 + damage;
+
+          if (target.type === "hq") {
+            score += 400;
+          }
+          if (damage >= target.hp) {
+            score += 120;
+          }
+          score += typeConfig[target.type].hp * 5;
+          actions.push({ kind: "shoot", piece, row: shot.row, col: shot.col, score });
+        }
+
+        for (const move of getLegalMoves(piece)) {
+          let score = 30;
+          if (playerHq) {
+            const before = distance(piece.row, piece.col, playerHq.row, playerHq.col);
+            const after = distance(move.row, move.col, playerHq.row, playerHq.col);
+            score += (before - after) * 12;
+          }
+          if (piece.type === "tank" || piece.type === "plane") {
+            score += 8;
+          }
+          if (move.row >= 5) {
+            score += 6;
+          }
+          actions.push({ kind: "move", piece, row: move.row, col: move.col, score });
+        }
+      });
+
+      actions.sort((a, b) => b.score - a.score);
+      return actions[0] || null;
+    }
+
+    function findHq(owner) {
+      let result = null;
+      forEachPiece((piece) => {
+        if (piece.owner === owner && piece.type === "hq") {
+          result = piece;
+        }
+      });
+      return result;
+    }
+
+    function distance(aRow, aCol, bRow, bCol) {
+      return Math.abs(aRow - bRow) + Math.abs(aCol - bCol);
+    }
+
+    function formatCoord(row, col) {
+      return `${LETTERS[row]}${col + 1}`;
+    }
+
+    function capitalize(value) {
+      return value.charAt(0).toUpperCase() + value.slice(1);
+    }
+
+    function setMenuMode(mode) {
+      if (mode !== "ai" && mode !== "friend") {
+        return;
+      }
+      unlockAudio();
+      playSelectSound();
+      state.gameMode = mode;
+      state.menuNote = "";
+      updateUI();
+    }
+
+    function startGameFromMenu() {
+      unlockAudio();
+      playSelectSound();
+      cancelEnemyTurnTimer();
+      state.hasStartedGame = true;
+      state.menuOpen = false;
+      state.helpOpen = false;
+      state.settingsOpen = false;
+      state.menuNote = "";
+      state.history = [];
+      state.future = [];
+      resetGame();
+    }
+
+    function continueGameFromMenu() {
+      if (!state.hasStartedGame) {
+        return;
+      }
+      unlockAudio();
+      playSelectSound();
+      state.menuOpen = false;
+      state.helpOpen = false;
+      state.settingsOpen = false;
+      state.menuNote = "";
+      if (state.ysdk && state.gameMode === "ai" && !state.gameOver) {
+        state.ysdk.features.GameplayAPI?.start?.();
+      }
+      updateUI();
+    }
+
+    function openHelp() {
+      unlockAudio();
+      playSelectSound();
+      state.helpOpen = true;
+      state.settingsOpen = false;
+      updateUI();
+    }
+
+    function closeHelp() {
+      playSelectSound();
+      state.helpOpen = false;
+      updateUI();
+    }
+
+    function openSettings() {
+      unlockAudio();
+      playSelectSound();
+      state.helpOpen = false;
+      state.settingsOpen = true;
+      state.menuNote = "";
+      updateUI();
+    }
+
+    function closeSettings() {
+      playSelectSound();
+      state.settingsOpen = false;
+      updateUI();
+    }
+
+    function openMainMenu() {
+      unlockAudio();
+      playSelectSound();
+      cancelEnemyTurnTimer();
+      state.helpOpen = false;
+      state.settingsOpen = false;
+      state.menuOpen = true;
+      state.menuNote = "";
+      if (state.ysdk) {
+        state.ysdk.features.GameplayAPI?.stop?.();
+      }
+      updateUI();
+    }
+
+    rollBtn.addEventListener("click", rollDice);
+    undoBtn.addEventListener("click", () => {
+      unlockAudio();
+      playSelectSound();
+      undoLastStep();
+    });
+    redoBtn.addEventListener("click", () => {
+      unlockAudio();
+      playSelectSound();
+      redoLastStep();
+    });
+    resetBtn.addEventListener("click", () => {
+      unlockAudio();
+      playSelectSound();
+      resetGame();
+    });
+    helpBtn.addEventListener("click", openHelp);
+    settingsBtn.addEventListener("click", openSettings);
+    menuBtn.addEventListener("click", openMainMenu);
+    menuModeAiBtn.addEventListener("click", () => setMenuMode("ai"));
+    menuModeFriendBtn.addEventListener("click", () => setMenuMode("friend"));
+    menuStartBtn.addEventListener("click", startGameFromMenu);
+    menuContinueBtn.addEventListener("click", continueGameFromMenu);
+    menuHelpBtn.addEventListener("click", openHelp);
+    menuSettingsBtn.addEventListener("click", openSettings);
+    helpCloseBtn.addEventListener("click", closeHelp);
+    settingsCloseBtn.addEventListener("click", closeSettings);
+    musicToggleBtn.addEventListener("click", () => {
+      unlockAudio();
+      playSelectSound();
+      toggleMusicEnabled();
+    });
+    musicChoiceMilitaryBtn.addEventListener("click", () => {
+      unlockAudio();
+      setMusicTrack("military");
+    });
+    musicChoiceBattleBtn.addEventListener("click", () => {
+      unlockAudio();
+      setMusicTrack("battle");
+    });
+    musicChoiceRegularBtn.addEventListener("click", () => {
+      unlockAudio();
+      setMusicTrack("regular");
+    });
+    sfxToggleBtn.addEventListener("click", () => {
+      unlockAudio();
+      playSelectSound();
+      toggleSfxEnabled();
+    });
+    audioVolumeSlider.addEventListener("input", (event) => {
+      unlockAudio();
+      setAudioVolume(Number(event.target.value) / 100);
+    });
+    window.addEventListener("resize", updateViewportScale);
+    document.addEventListener("visibilitychange", handleVisibilityAudio);
+    loadAudioSettings();
+    initYandexSdk();
+    resetGame();
+  </script>
+</body>
+</html>

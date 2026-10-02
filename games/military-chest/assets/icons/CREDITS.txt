@@ -1,0 +1,22 @@
+Icons used in this project are from Game-icons.net and licensed under CC BY 3.0.
+
+Attribution:
+- soldier.svg -> "Flamethrower Soldier" by Delapouite
+  https://game-icons.net/1x1/delapouite/flamethrower-soldier.html
+- officer.svg -> "Police Officer Head" by Delapouite
+  https://game-icons.net/1x1/delapouite/police-officer-head.html
+- artillery.svg -> "Cannon" by Lorc
+  https://game-icons.net/1x1/lorc/cannon.html
+- tank.svg -> "Tank" by Lorc
+  https://game-icons.net/1x1/lorc/tank.html
+- plane.svg -> "Jet Fighter" by Delapouite
+  https://game-icons.net/1x1/delapouite/jet-fighter.html
+- rocket.svg -> "Rocket" by Lorc
+  https://game-icons.net/1x1/lorc/rocket.html
+- tower.svg -> "Watchtower" by Delapouite
+  https://game-icons.net/1x1/delapouite/watchtower.html
+- hq.svg -> "Military Fort" by Delapouite
+  https://game-icons.net/1x1/delapouite/military-fort.html
+
+License:
+https://creativecommons.org/licenses/by/3.0/

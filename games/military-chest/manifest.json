@@ -1,0 +1,21 @@
+{
+  "version": "1.0.0",
+  "platform": "web",
+  "orientation": "landscape",
+  "title": {
+    "ru": "Военный сундук",
+    "en": "Military Chest"
+  },
+  "description": {
+    "ru": "Пошаговая военная стратегия на клетчатом поле 10×10. Играйте вдвоём: пехота, танки, самолёты, ракеты, пушки и вышки против штаба противника.",
+    "en": "Turn-based military strategy on a 10×10 grid. Two players: infantry, tanks, planes, rockets, artillery against the enemy HQ."
+  },
+  "author": {
+    "name": "DoAsPlanned"
+  },
+  "categories": ["strategy", "board"],
+  "tags": {
+    "ru": ["стратегия", "военная", "настольная", "танки", "пошаговая"],
+    "en": ["strategy", "military", "board", "tanks", "turn-based"]
+  }
+}

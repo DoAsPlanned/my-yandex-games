@@ -1,0 +1,20 @@
+Music tracks used in this project:
+
+1. Military theme
+- "Military SoundTrack" by spring
+- Source page: https://opengameart.org/content/military-soundtrack
+- File: battle-theme.mp3
+- License: CC BY 3.0
+
+2. Battle theme
+- Track downloaded from OpenGameArt as battle_theme.mp3
+- Local file: battle-theme-alt-2.mp3
+- License: from original OpenGameArt source
+
+3. Regular battle theme
+- "A Regular Battle" from FLARE / OpenGameArt
+- Related source page: https://opengameart.org/content/possible-background-music
+- Local file: battle-theme-alt-3.mp3
+- License: from original OpenGameArt source
+
+Gameplay effect slots are intentionally left empty at the moment so custom SFX can be added later.
