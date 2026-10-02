@@ -1,0 +1,181 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0d1725">
+  <title>Башня Ритма</title>
+  <script async src="/sdk.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css?v=20260329-37">
+</head>
+<body>
+  <div class="app-shell">
+    <div class="ambient ambient-a"></div>
+    <div class="ambient ambient-b"></div>
+
+    <main class="game-layout">
+      <section class="stage-card">
+        <canvas id="gameCanvas" aria-label="Башня Ритма"></canvas>
+
+        <div class="stage-overlay stage-overlay-top">
+          <div class="brand-chip">
+            <span class="brand-kicker">Подсказка</span>
+            <h1>Башня Ритма</h1>
+            <p>Собирай чистую башню из платформ, ловя идеальные попадания по двум осям.</p>
+          </div>
+
+          <div class="hud-actions">
+            <button class="ghost-btn hud-restart playing-only" id="restartTopButton">Рестарт</button>
+            <button class="icon-btn" id="musicToggleButton" aria-label="Музыка">
+              <span class="icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M4 10.5V13.5H7.5L12 18V6L7.5 10.5H4Z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>
+                  <path d="M15.5 9.25C16.9 10.05 17.8 11.38 17.8 12.9C17.8 14.42 16.9 15.75 15.5 16.55" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+                  <path d="M17.9 6.9C20 8.3 21.2 10.45 21.2 12.9C21.2 15.35 20 17.5 17.9 18.9" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+                </svg>
+              </span>
+            </button>
+            <button class="icon-btn" id="settingsButton" aria-label="Настройки">
+              <span class="icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M12 9.5C10.62 9.5 9.5 10.62 9.5 12C9.5 13.38 10.62 14.5 12 14.5C13.38 14.5 14.5 13.38 14.5 12C14.5 10.62 13.38 9.5 12 9.5Z" stroke="currentColor" stroke-width="1.8"/>
+                  <path d="M19 13V11L17.4 10.55C17.28 10.15 17.11 9.78 16.88 9.45L17.67 8L16 6.33L14.55 7.12C14.22 6.89 13.85 6.72 13.45 6.6L13 5H11L10.55 6.6C10.15 6.72 9.78 6.89 9.45 7.12L8 6.33L6.33 8L7.12 9.45C6.89 9.78 6.72 10.15 6.6 10.55L5 11V13L6.6 13.45C6.72 13.85 6.89 14.22 7.12 14.55L6.33 16L8 17.67L9.45 16.88C9.78 17.11 10.15 17.28 10.55 17.4L11 19H13L13.45 17.4C13.85 17.28 14.22 17.11 14.55 16.88L16 17.67L17.67 16L16.88 14.55C17.11 14.22 17.28 13.85 17.4 13.45L19 13Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                </svg>
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <div class="stats">
+          <div class="stat-card">
+            <span class="stat-label">Счёт</span>
+            <strong id="scoreValue">0</strong>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Лучший</span>
+            <strong id="bestValue">0</strong>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Серия</span>
+            <strong id="comboValue">0</strong>
+          </div>
+        </div>
+
+        <div class="center-message hidden" id="centerMessage">
+          <span id="centerMessageText"></span>
+        </div>
+
+        <div class="menu-panel" id="startPanel">
+          <div class="menu-copy">
+            <span class="eyebrow">Строй идеальную башню</span>
+            <h2>Башня Ритма</h2>
+            <p>Нажми в нужный момент, чтобы поставить платформу точно поверх предыдущей. Чем точнее попадание, тем выше башня.</p>
+          </div>
+
+          <div class="menu-actions">
+            <button class="primary-btn" id="startButton">Играть</button>
+            <button class="ghost-btn" id="shareButton">Рейтинг</button>
+          </div>
+
+          <section class="menu-ranking">
+            <div class="card-head">
+              <span class="eyebrow">Топ игроков</span>
+              <h3 id="ratingTitle">Рейтинг</h3>
+            </div>
+            <ol class="ranking-list" id="rankingList"></ol>
+            <div class="ranking-self" id="rankingSelf"></div>
+            <button class="ghost-btn compact-btn ranking-auth hidden" id="rankingAuthButton">Войти для рейтинга</button>
+            <p class="rating-note" id="ratingNote">Здесь показываются лучшие игроки из глобального топа Башни Ритма.</p>
+          </section>
+        </div>
+
+        <div class="compact-panel hidden" id="gameOverPanel">
+          <span class="eyebrow">Раунд завершён</span>
+          <h2 id="gameOverTitle">Башня потеряла баланс</h2>
+          <p id="gameOverSummary">Ещё одна попытка, и платформу получится поймать гораздо точнее.</p>
+          <div class="result-inline">
+            <span>Результат <strong id="finalScoreValue">0</strong></span>
+            <span>Лучший <strong id="finalBestValue">0</strong></span>
+          </div>
+          <div class="panel-actions">
+            <button class="ghost-btn" id="gameOverMenuButton">Меню</button>
+            <button class="primary-btn" id="restartButton">Сыграть ещё</button>
+          </div>
+        </div>
+
+        <div class="stage-overlay stage-overlay-bottom">
+          <div class="control-cluster">
+            <button class="primary-btn playing-only" id="dropButton">Поставить</button>
+            <button class="ghost-btn playing-only" id="restartInlineButton">Рестарт</button>
+          </div>
+
+          <div class="status-chip">
+            <span class="eyebrow">Статус</span>
+            <strong id="sdkStatus">Подготовка платформы...</strong>
+            <p id="sdkHint">Локальные рекорды сохраняются даже без SDK.</p>
+          </div>
+        </div>
+        <div class="settings-slider">
+          <div class="settings-slider-head">
+            <span>Громкость</span>
+            <strong id="musicVolumeValue">50%</strong>
+          </div>
+          <input type="range" id="musicVolumeSlider" min="0" max="100" step="1" value="50" aria-label="Громкость музыки">
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="settings-sheet hidden" id="settingsSheet">
+    <div class="settings-dialog">
+      <div class="dialog-head">
+        <div>
+          <span class="eyebrow">Настройки</span>
+          <h2>Панель игры</h2>
+        </div>
+        <button class="icon-btn" id="closeSettingsButton" aria-label="Закрыть настройки">
+          <span class="icon icon-close" aria-hidden="true"></span>
+        </button>
+      </div>
+
+      <section class="settings-section">
+        <div class="card-head">
+          <span class="eyebrow">Управление</span>
+          <h3>Одно нажатие</h3>
+        </div>
+        <ul class="tips-list">
+          <li>Нажми или тапни, чтобы поставить текущую платформу.</li>
+          <li>Платформы двигаются по очереди по осям X и Y.</li>
+          <li>Точное попадание даёт серию и помогает строить ровную башню.</li>
+        </ul>
+      </section>
+
+      <section class="settings-section">
+        <div class="card-head">
+          <span class="eyebrow">Музыка</span>
+          <h3>Атмосфера</h3>
+        </div>
+        <div class="settings-row">
+          <span>Фоновая музыка</span>
+          <button class="ghost-btn compact-btn" id="musicSettingsButton">Включена</button>
+        </div>
+      </section>
+
+      <section class="settings-section">
+        <div class="card-head">
+          <span class="eyebrow">Платформа</span>
+          <h3>Синхронизация</h3>
+        </div>
+        <p class="rating-note" id="settingsStatusText">Игра работает локально и может синхронизировать рекорды через SDK.</p>
+      </section>
+    </div>
+  </div>
+
+  <script src="./game.js?v=20260329-36"></script>
+</body>
+</html>

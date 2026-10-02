@@ -1,0 +1,42 @@
+﻿{
+  "version": "1.0.0",
+  "platform": "web",
+  "orientation": "portrait",
+  "title": {
+    "ru": "Башня Ритма",
+    "en": "Rhythm Tower"
+  },
+  "description": {
+    "ru": "Аркадная игра про строительство башни из движущихся платформ с мягкой музыкой, глобальным рейтингом и сохранением прогресса через SDK Яндекс Игр.",
+    "en": "An arcade tower-stacking game with moving platforms, calm music, global leaderboard support, and Yandex Games SDK integration."
+  },
+  "icon": "icon.png",
+  "author": {
+    "name": "DoAsPlanned"
+  },
+  "categories": [
+    "arcade",
+    "casual"
+  ],
+  "tags": {
+    "ru": [
+      "аркада",
+      "башня",
+      "реакция",
+      "тайминг",
+      "казуальная игра"
+    ],
+    "en": [
+      "arcade",
+      "tower",
+      "timing",
+      "reaction",
+      "casual"
+    ]
+  },
+  "yandexGames": {
+    "sdk": true,
+    "leaderboard": "towerpulsehighscore",
+    "relativeSdkPath": "/sdk.js"
+  }
+}
